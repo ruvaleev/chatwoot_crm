@@ -19,12 +19,14 @@ module Custom::ActionCableListener
     super - account.users.reject { |user| conversation.crm_visible_to?(user) }.map(&:pubsub_token)
   end
 
-  # Every user listens to the account stream (RoomChannel), so with freelancers around address users one by one.
+  # Freelancers get the same events without client phone numbers. Every user listens to the account stream
+  # (RoomChannel), so with freelancers around contact events are addressed to the other users one by one.
   def broadcast(account, tokens, event_name, data)
-    if tokens == [account_token(account)] && account.users.any?(&:crm_freelancer?)
-      tokens = account.users.reject(&:crm_freelancer?).map(&:pubsub_token)
-    end
+    freelancer_tokens = account.users.select(&:crm_freelancer?).map(&:pubsub_token)
+    return super if freelancer_tokens.empty?
 
-    super(account, tokens, event_name, data)
+    tokens = account.users.reject(&:crm_freelancer?).map(&:pubsub_token) if tokens == [account_token(account)]
+    super(account, tokens - freelancer_tokens, event_name, data)
+    super(account, tokens & freelancer_tokens, event_name, Custom::PhoneScrubber.new(locale: account.locale).scrub(data))
   end
 end

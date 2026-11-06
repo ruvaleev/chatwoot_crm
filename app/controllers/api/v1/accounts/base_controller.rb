@@ -15,3 +15,6 @@ class Api::V1::Accounts::BaseController < Api::BaseController
     render json: { error: 'API access is not enabled for this account' }, status: :forbidden
   end
 end
+
+# CRM: extension point for custom/ (crm/docs/core-changes.md)
+Api::V1::Accounts::BaseController.prepend_mod_with('Api::V1::Accounts::BaseController')

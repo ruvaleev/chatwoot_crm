@@ -100,6 +100,47 @@ RSpec.describe 'Freelancer isolation', type: :request do
     expect(response.parsed_body['payload'].pluck('id')).to contain_exactly(own.contact_id, foreign.contact_id, unassigned.contact_id)
   end
 
+  describe 'client phone number' do
+    let(:contact_path) { "/api/v1/accounts/#{account.id}/contacts/#{own.contact_id}" }
+
+    before { own.contact.update!(name: '+15550104477', phone_number: '+15550104477', identifier: '15550104477@s.whatsapp.net') }
+
+    it 'is hidden from the freelancer in contacts and conversations' do
+      get contact_path, headers: freelancer.create_new_auth_token, as: :json
+      expect(response.parsed_body['payload']).to include('name' => 'Client •••77', 'phone_number' => nil, 'identifier' => nil)
+
+      get conversations_path, headers: freelancer.create_new_auth_token, as: :json
+      expect(response.parsed_body.dig('data', 'payload', 0, 'meta', 'sender')).to include('phone_number' => nil, 'identifier' => nil)
+      expect(response.body).not_to include('15550104477')
+    end
+
+    it 'stays visible to other agents' do
+      get contact_path, headers: manager.create_new_auth_token, as: :json
+
+      expect(response.parsed_body['payload']).to include('phone_number' => '+15550104477')
+    end
+
+    it 'cannot be found by the freelancer through search' do
+      get "/api/v1/accounts/#{account.id}/contacts/search", params: { q: '628492' }, headers: freelancer.create_new_auth_token, as: :json
+      expect(response.parsed_body['payload']).to be_empty
+
+      get "/api/v1/accounts/#{account.id}/search", params: { q: '628492' }, headers: freelancer.create_new_auth_token, as: :json
+      expect(response.parsed_body['payload']).to include('contacts' => [], 'conversations' => [])
+
+      filter = [{ attribute_key: 'phone_number', filter_operator: 'contains', values: ['628'], query_operator: nil }]
+      post "/api/v1/accounts/#{account.id}/contacts/filter", params: { payload: filter }, headers: freelancer.create_new_auth_token, as: :json
+      expect(response.parsed_body['payload']).to be_empty
+    end
+
+    it 'is not overwritten when the freelancer saves the contact form' do
+      patch contact_path, params: { name: 'Client •••77', phone_number: '', identifier: '', email: 'anna@example.com' },
+                          headers: freelancer.create_new_auth_token, as: :json
+
+      expect(own.contact.reload).to have_attributes(name: '+15550104477', phone_number: '+15550104477',
+                                                    identifier: '15550104477@s.whatsapp.net', email: 'anna@example.com')
+    end
+  end
+
   it 'does not notify the freelancer about conversations they cannot open' do
     NotificationBuilder.new(notification_type: 'conversation_mention', user: freelancer, account: account, primary_actor: foreign).perform
 

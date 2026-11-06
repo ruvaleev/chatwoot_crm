@@ -2,7 +2,7 @@ module Custom::SearchService
   private
 
   def filter_conversations
-    super.crm_visible_to(current_user)
+    crm_phone_lookup? ? super.none : super.crm_visible_to(current_user)
   end
 
   def message_base_query
@@ -12,6 +12,11 @@ module Custom::SearchService
   end
 
   def filter_contacts
-    super.crm_visible_to(current_user)
+    crm_phone_lookup? ? super.none : super.crm_visible_to(current_user)
+  end
+
+  # Conversation and contact search match phone numbers; freelancers must not confirm a number that way.
+  def crm_phone_lookup?
+    current_user.crm_freelancer? && Custom::PhoneScrubber.phone_like?(search_query)
   end
 end

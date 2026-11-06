@@ -1,0 +1,4 @@
+en:
+  crm:
+    contact:
+      masked_name: 'Client •••%{last_digits}'

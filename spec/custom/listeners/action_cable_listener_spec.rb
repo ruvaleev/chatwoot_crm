@@ -51,4 +51,17 @@ describe ActionCableListener do
     expect(ActionCableBroadcastJob).to have_received(:perform_later)
       .with(a_collection_containing_exactly(admin.pubsub_token, manager.pubsub_token), 'contact.updated', anything)
   end
+
+  it 'sends the freelancer a copy of the event without client phone numbers' do
+    conversation = create(:conversation, account: account, inbox: inbox, assignee: freelancer)
+    conversation.contact.update!(phone_number: '+15550104477')
+
+    listener.conversation_updated(Events::Base.new('conversation.updated', Time.zone.now, conversation: conversation))
+
+    expect(ActionCableBroadcastJob).to have_received(:perform_later)
+      .with([freelancer.pubsub_token], 'conversation.updated', hash_including(meta: hash_including(sender: hash_including(phone_number: nil))))
+    expect(ActionCableBroadcastJob).to have_received(:perform_later)
+      .with(array_excluding(freelancer.pubsub_token), 'conversation.updated',
+            hash_including(meta: hash_including(sender: hash_including(phone_number: '+15550104477'))))
+  end
 end
