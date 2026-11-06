@@ -7,6 +7,13 @@ cd "$(dirname "$0")/../.."
 # Upstream specs covering upstream files we changed or extend (keep in sync with crm/docs/core-changes.md).
 UPSTREAM_SPECS=(
   spec/dispatchers/async_dispatcher_spec.rb
+  spec/builders/notification_builder_spec.rb
+  spec/controllers/api/v1/accounts/search_controller_spec.rb
+  spec/finders/conversation_finder_spec.rb
+  spec/listeners/action_cable_listener_spec.rb
+  spec/policies/conversation_policy_spec.rb
+  spec/services/conversations/permission_filter_service_spec.rb
+  spec/services/search_service_spec.rb
 )
 
 bundle exec rubocop custom spec/custom config/application.rb
