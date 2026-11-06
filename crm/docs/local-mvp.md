@@ -76,7 +76,16 @@ bin/dev   # = foreman start -f Procfile.crm; первое открытие ст�
 1. Settings → Agents → добавить менеджера (Administrator) и фрилансера (Agent). Без SMTP пароль задаётся
    через super admin: `http://localhost:3000/super_admin` → Users.
 2. Settings → Inboxes → «Номер A» → Collaborators: фрилансер (только свой inbox), менеджер.
-3. Передача: менеджер в диалоге пишет приватную заметку-бриф и назначает диалог на фрилансера.
+3. Пометить фрилансера (роль **Agent**, не Administrator). В `bin/rails console`:
+   ```ruby
+   user = User.find_by!(email: 'freelancer@example.com')
+   AccountUser.find_by!(account_id: 2, user: user).update!(role: :agent)
+   user.update!(custom_attributes: user.custom_attributes.merge('crm_freelancer' => true))
+   ```
+   Фрилансер видит **только диалоги, назначенные на него сейчас**, и контакты этих диалогов. Неназначенные и
+   чужие диалоги своего inbox'а ему не видны. После снятия назначения доступ пропадает. Снять флаг:
+   `'crm_freelancer' => false`. Позже это будет делать `crm:access:sync` (этап 4).
+4. Передача: менеджер в диалоге пишет приватную заметку-бриф и назначает диалог на фрилансера.
 
 ## Известные ограничения MVP
 
