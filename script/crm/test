@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Fast feedback loop for the fork: rubocop on our files + spec/custom + upstream specs touched by our changes.
+# The full upstream suite runs only when merging a new upstream release (see crm/PRD.md).
+set -euo pipefail
+cd "$(dirname "$0")/../.."
+
+# Upstream specs covering upstream files we changed or extend (keep in sync with crm/docs/core-changes.md).
+UPSTREAM_SPECS=(
+  spec/dispatchers/async_dispatcher_spec.rb
+)
+
+bundle exec rubocop custom spec/custom config/application.rb
+bundle exec rspec spec/custom "${UPSTREAM_SPECS[@]}" "$@"
