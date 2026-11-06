@@ -12,7 +12,23 @@
 
 ---
 
-## 2026-11-06 · Этап M · blocked (H14)
+## 2026-11-06 · Этап M · in progress (ждём H5/H6)
+
+**Обновление после H14**
+- Evolution 2.3.7 установлен (`node_modules` 662 МБ) и запущен; миграции в БД `evolution` применены.
+  Проблема: `sharp` пытался собраться из исходников под Homebrew `vips 8.18.7`; решение —
+  `SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm ci`.
+- `Procfile.dev` из upstream не запускает Sidekiq без `.env` (CLI `dotenv` требует файл). Не правя upstream,
+  добавил свой `Procfile.crm`: тот же стек, Sidekiq через `dotenv -f .env.development.local`, плюс процесс
+  Evolution. Запуск: `foreman start -f Procfile.crm` (overmind не установлен, foreman есть).
+- `rake "crm:whatsapp:connect[number-1,Номер 1,2]"` в аккаунте «Acme Org»: создан API-inbox «Номер 1» с
+  webhook'ом на `http://localhost:8080/chatwoot/webhook/number-1`, служебный админ «WhatsApp», в диалоге с
+  контактом «WhatsApp» пришёл QR-код картинкой. Webhook'и Chatwoot → Evolution проходят (SSRF-фильтр не мешает).
+- Память Evolution без подключённого номера: ~230 МБ footprint (`top`, из них 207 МБ сжато macOS; `ps` RSS
+  показывает 26 МБ и вводит в заблуждение). Замер с подключённым номером — после H6. Для бюджета NFR6 это
+  заметная доля: на сервере измерить `docker stats` и решать про лимит.
+
+**Предыдущая запись (до H14)**
 
 **Сделано**
 - Исследование Evolution API (источники — GitHub API и исходники тега):

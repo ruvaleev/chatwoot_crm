@@ -7,7 +7,7 @@
 
 | Компонент | Где | Порт |
 |---|---|---|
-| Chatwoot (web + Sidekiq + Vite) | этот репозиторий, `overmind start -f Procfile.dev` | 3000 (Vite 3036) |
+| Chatwoot (web + Sidekiq + Vite) | этот репозиторий | 3000 (Vite 3036) |
 | Evolution API 2.3.7 | `~/private_projects/evolution-api` (исходники тега, **вне** репозитория) | 8080 |
 | PostgreSQL | Homebrew. БД Chatwoot — как раньше; БД `evolution`, владелец `evolution` | 5432 |
 | Redis | Homebrew. Evolution использует индекс 6 с префиксом `evolution` | 6379 |
@@ -26,7 +26,7 @@
 
 ```bash
 cd ~/private_projects/evolution-api
-npm ci
+SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm ci   # иначе sharp пытается собраться под Homebrew vips и падает
 npm run db:generate
 npm run db:deploy      # миграции в БД evolution
 npm run build
@@ -34,15 +34,17 @@ npm run build
 
 ## Запуск и остановка
 
-```bash
-# 1. Evolution API (отдельная вкладка терминала; Ctrl+C — остановить)
-cd ~/private_projects/evolution-api && npm run start:prod
+Всё одной командой из корня репозитория (Ctrl+C — остановить всё):
 
-# 2. Chatwoot (вкладка в корне репозитория)
-overmind start -f Procfile.dev
+```bash
+foreman start -f Procfile.crm
 ```
 
-Проверка Evolution: `curl -s localhost:8080` возвращает JSON с версией.
+`Procfile.crm` — это `Procfile.dev` плюс Evolution API, а Sidekiq читает `.env.development.local`.
+`Procfile.dev` из upstream без файла `.env` не запустит Sidekiq: CLI `dotenv` требует `.env`.
+Путь к Evolution можно переопределить через `EVOLUTION_DIR`.
+
+Проверка: `curl -s localhost:8080` (Evolution) возвращает JSON с версией, Chatwoot — `http://localhost:3000`.
 
 ## Подключить номер
 
@@ -51,10 +53,12 @@ overmind start -f Procfile.dev
    ```bash
    bundle exec rake "crm:whatsapp:connect[number-a,Номер A,<id>]"
    ```
+   Первый номер уже заведён так: `crm:whatsapp:connect[number-1,Номер 1,2]` (аккаунт «Acme Org»).
    `number-a` — латинское имя instance в Evolution, `Номер A` — имя inbox'а в Chatwoot. **Inbox потом не
    переименовывать**: Evolution ищет его по имени. Задача идемпотентна: повторный запуск ничего не дублирует
    и выдаёт новый QR, если номер не подключён.
-3. В Chatwoot: inbox «Номер A» → диалог с контактом «WhatsApp» → там QR-код (обновляется сам).
+3. В Chatwoot: inbox «Номер A» → диалог с контактом «WhatsApp» → там QR-код. Он живёт ~40 секунд и
+   обновляется сам. После 30 попыток (`QRCODE_LIMIT`) Evolution перестаёт его выдавать — тогда снова запустить задачу.
 4. На телефоне с этим номером: WhatsApp → «Связанные устройства» → «Привязка устройства» → отсканировать.
    В списке устройств он будет называться «CRM».
 

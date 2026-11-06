@@ -93,7 +93,7 @@
 - AC0.3 Спеки, которые падали из-за локального `.env` (`spec/controllers/slack_uploads_controller_spec.rb`),
   зелёные.
 
-## Этап M. Локальный MVP: WhatsApp и командная работа на Mac — `blocked (H14)` · `[H5] [H6] [H14]`
+## Этап M. Локальный MVP: WhatsApp и командная работа на Mac — `in progress` · `[H5] [H6]`
 
 Цель: на Mac человека Chatwoot (dev-режим) получает и отправляет сообщения WhatsApp через Evolution API,
 менеджер и фрилансер работают с одним номером, передача клиента работает. Docker на Mac не ставим (диск),
@@ -105,10 +105,10 @@ Evolution подтянет после переподключения (прове
 Задачи:
 - [x] Исследование Evolution API v2 (см. этап 0): версия и тег, требования (Node, БД, Redis), встроенная
       интеграция с Chatwoot, ограничения, память на номер. Записать в `crm/PROGRESS.md`.
-- [ ] Evolution API локально: исходники точного тега **вне** репозитория (например, `~/private_projects/evolution-api`),
+- [x] Evolution API локально: исходники точного тега **вне** репозитория (например, `~/private_projects/evolution-api`),
       отдельная БД и пользователь Postgres, Redis-префикс, API-ключ в локальном `.env` Evolution, слушает только
       `127.0.0.1`. Перед установкой `df -h ~`. Команды запуска и остановки — в `crm/docs/local-mvp.md`.
-- [ ] Chatwoot локально: `pnpm dev` или `overmind start -f Procfile.dev`, аккаунт и super admin (учётку выдать
+- [x] Chatwoot локально: `pnpm dev` или `overmind start -f Procfile.dev`, аккаунт и super admin (учётку выдать
       человеку в ответе сессии).
 - [x] Rake-задача `crm:whatsapp:connect[instance_name,inbox_name,account_id]` (в `custom/lib/tasks`): через
       API Evolution создаёт instance с интеграцией Chatwoot, говорит, где взять QR (диалог в inbox'е).
