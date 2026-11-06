@@ -8,6 +8,8 @@ cd "$(dirname "$0")/../.."
 UPSTREAM_SPECS=(
   spec/dispatchers/async_dispatcher_spec.rb
   spec/builders/notification_builder_spec.rb
+  spec/controllers/api/v1/accounts/contacts
+  spec/controllers/api/v1/accounts/contacts_controller_spec.rb
   spec/controllers/api/v1/accounts/search_controller_spec.rb
   spec/finders/conversation_finder_spec.rb
   spec/listeners/action_cable_listener_spec.rb
@@ -16,5 +18,5 @@ UPSTREAM_SPECS=(
   spec/services/search_service_spec.rb
 )
 
-bundle exec rubocop custom spec/custom config/application.rb
+bundle exec rubocop custom spec/custom config/application.rb app/controllers/api/v1/accounts/contacts/base_controller.rb
 bundle exec rspec spec/custom "${UPSTREAM_SPECS[@]}" "$@"

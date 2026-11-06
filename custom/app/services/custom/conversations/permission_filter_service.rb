@@ -1,5 +1,5 @@
 module Custom::Conversations::PermissionFilterService
   def perform
-    user.crm_freelancer? ? super.where(assignee_id: user.id) : super
+    super.crm_visible_to(user)
   end
 end

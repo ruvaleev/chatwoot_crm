@@ -2,12 +2,16 @@ module Custom::SearchService
   private
 
   def filter_conversations
-    current_user.crm_freelancer? ? super.where(assignee_id: current_user.id) : super
+    super.crm_visible_to(current_user)
   end
 
   def message_base_query
     return super unless current_user.crm_freelancer?
 
-    super.where(conversation_id: current_account.conversations.where(assignee_id: current_user.id).select(:id))
+    super.where(conversation_id: current_account.conversations.crm_visible_to(current_user).select(:id))
+  end
+
+  def filter_contacts
+    super.crm_visible_to(current_user)
   end
 end

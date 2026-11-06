@@ -69,6 +69,37 @@ RSpec.describe 'Freelancer isolation', type: :request do
     expect(response.parsed_body.dig('payload', 'messages').pluck('conversation_id')).to eq([own.display_id])
   end
 
+  it 'shows only contacts of assigned conversations' do
+    contacts_path = "/api/v1/accounts/#{account.id}/contacts"
+
+    get contacts_path, headers: freelancer.create_new_auth_token, as: :json
+    expect(response.parsed_body['payload'].pluck('id')).to eq([own.contact_id])
+
+    get "#{contacts_path}/search", params: { q: foreign.contact.name }, headers: freelancer.create_new_auth_token, as: :json
+    expect(response.parsed_body['payload']).to be_empty
+
+    get "/api/v1/accounts/#{account.id}/search/contacts", params: { q: '' }, headers: freelancer.create_new_auth_token, as: :json
+    expect(response.parsed_body.dig('payload', 'contacts').pluck('id')).to eq([own.contact_id])
+  end
+
+  it 'denies contacts and their nested resources outside assigned conversations' do
+    contact_path = "/api/v1/accounts/#{account.id}/contacts/#{foreign.contact_id}"
+
+    %w[/ /notes /labels /conversations].each do |suffix|
+      get "#{contact_path}#{suffix.delete_suffix('/')}", headers: freelancer.create_new_auth_token, as: :json
+      expect(response).to have_http_status(:not_found)
+    end
+
+    get "/api/v1/accounts/#{account.id}/contacts/#{own.contact_id}/notes", headers: freelancer.create_new_auth_token, as: :json
+    expect(response).to have_http_status(:success)
+  end
+
+  it 'keeps all contacts visible to other agents' do
+    get "/api/v1/accounts/#{account.id}/contacts", headers: manager.create_new_auth_token, as: :json
+
+    expect(response.parsed_body['payload'].pluck('id')).to contain_exactly(own.contact_id, foreign.contact_id, unassigned.contact_id)
+  end
+
   it 'does not notify the freelancer about conversations they cannot open' do
     NotificationBuilder.new(notification_type: 'conversation_mention', user: freelancer, account: account, primary_actor: foreign).perform
 
