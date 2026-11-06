@@ -1,5 +1,20 @@
 # crm/ — рабочее место для доработок форка
 
+## Запуск локально
+
+```bash
+bin/dev        # Rails :3000, Sidekiq, Vite :3036, Evolution API :8080. Ctrl+C — остановить всё
+```
+
+- `bin/dev` = `foreman start -f Procfile.crm`. Upstream-способ (`pnpm dev` / `Procfile.dev`) у нас не работает:
+  Sidekiq там стартует через `dotenv`, которому нужен файл `.env`, а его мы не держим (он протекает в тесты).
+  Локальные настройки — в `.env.development.local`.
+- **Первое открытие http://localhost:3000 после запуска долгое (1–3 минуты)**: Vite компилирует фронтенд
+  по требованию. Страница «висит» — это нормально, дождись. Следующие загрузки быстрые.
+- Один процесс отдельно: `foreman start -f Procfile.crm backend` (или `worker`, `vite`, `evolution`).
+- Первая установка Evolution API, подключение номеров, люди и передача клиента — `crm/docs/local-mvp.md`.
+- Тесты: `script/crm/test` (секунды). Полный upstream-suite не нужен в обычной работе.
+
 Форк Chatwoot под наш процесс: WhatsApp-номера фрилансеров (через Evolution API, без WhatsApp Business),
 бесшовная передача клиента фрилансеру, уведомления и эскалации в Telegram, скрытие номера клиента, позже
 ИИ-ответы ночью. Деплой — Kamal на один VPS.

@@ -37,7 +37,7 @@ npm run build
 Всё одной командой из корня репозитория (Ctrl+C — остановить всё):
 
 ```bash
-foreman start -f Procfile.crm
+bin/dev   # = foreman start -f Procfile.crm; первое открытие страницы — 1–3 минуты (Vite компилирует)
 ```
 
 `Procfile.crm` — это `Procfile.dev` плюс Evolution API, а Sidekiq читает `.env.development.local`.

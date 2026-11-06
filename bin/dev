@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# CRM: full local stack (Rails, Sidekiq, Vite, Evolution API). See crm/README.md.
+exec foreman start -f "$(dirname "$0")/../Procfile.crm" "$@"

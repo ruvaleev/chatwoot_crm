@@ -20,7 +20,7 @@
   `SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm ci`.
 - `Procfile.dev` из upstream не запускает Sidekiq без `.env` (CLI `dotenv` требует файл). Не правя upstream,
   добавил свой `Procfile.crm`: тот же стек, Sidekiq через `dotenv -f .env.development.local`, плюс процесс
-  Evolution. Запуск: `foreman start -f Procfile.crm` (overmind не установлен, foreman есть).
+  Evolution. Запуск: `bin/dev` (обёртка над `foreman start -f Procfile.crm`; overmind не установлен). Первое открытие страницы в dev — 1–3 минуты, пока Vite компилирует фронтенд; человек принял это за зависание.
 - `rake "crm:whatsapp:connect[number-1,Номер 1,2]"` в аккаунте «Acme Org»: создан API-inbox «Номер 1» с
   webhook'ом на `http://localhost:8080/chatwoot/webhook/number-1`, служебный админ «WhatsApp», в диалоге с
   контактом «WhatsApp» пришёл QR-код картинкой. Webhook'и Chatwoot → Evolution проходят (SSRF-фильтр не мешает).
