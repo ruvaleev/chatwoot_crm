@@ -48,6 +48,8 @@ class ActionCableConnector extends BaseActionCableConnector {
       'user:logout': this.onLogout,
       'page:reload': this.onReload,
       'assignee.changed': this.onAssigneeChanged,
+      // CRM: a freelancer loses a reassigned conversation (crm/docs/core-changes.md)
+      'conversation.crm_access_revoked': this.onConversationAccessRevoked,
       'conversation.typing_on': this.onTypingOn,
       'conversation.typing_off': this.onTypingOff,
       'conversation.contact_changed': this.onConversationContactChange,
@@ -123,6 +125,11 @@ class ActionCableConnector extends BaseActionCableConnector {
     if (id) {
       this.app.$store.dispatch('updateConversation', payload);
     }
+    this.fetchConversationStats();
+  };
+
+  onConversationAccessRevoked = ({ id }) => {
+    this.app.$store.commit('DELETE_CONVERSATION', id);
     this.fetchConversationStats();
   };
 

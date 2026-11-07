@@ -100,6 +100,41 @@ RSpec.describe 'Freelancer isolation', type: :request do
     expect(response.parsed_body['payload'].pluck('id')).to contain_exactly(own.contact_id, foreign.contact_id, unassigned.contact_id)
   end
 
+  describe 'starting a conversation' do
+    let(:message) { { content: 'crm hello' } }
+
+    it 'starts a conversation for themselves with a client they see' do
+      expect do
+        post conversations_path, params: { inbox_id: inbox.id, contact_id: own.contact_id, assignee_id: freelancer.id, message: message },
+                                 headers: freelancer.create_new_auth_token, as: :json
+      end.to change(Conversation, :count).by(1)
+
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'denies starting a conversation with a client of other conversations' do
+      expect do
+        post conversations_path, params: { inbox_id: inbox.id, contact_id: foreign.contact_id, assignee_id: freelancer.id, message: message },
+                                 headers: freelancer.create_new_auth_token, as: :json
+        post conversations_path, params: { inbox_id: inbox.id, source_id: foreign.contact_inbox.source_id, assignee_id: freelancer.id },
+                                 headers: freelancer.create_new_auth_token, as: :json
+      end.not_to change(ContactInbox, :count)
+
+      expect(response).to have_http_status(:not_found)
+      expect(foreign.contact.conversations.count).to eq(1)
+    end
+
+    it 'denies a conversation that would not be assigned to the freelancer' do
+      expect do
+        post conversations_path, params: { inbox_id: inbox.id, contact_id: own.contact_id, message: message },
+                                 headers: freelancer.create_new_auth_token, as: :json
+      end.not_to change(Message, :count)
+
+      expect(response).to have_http_status(:not_found)
+      expect(own.contact.conversations.count).to eq(1)
+    end
+  end
+
   describe 'client phone number' do
     let(:contact_path) { "/api/v1/accounts/#{account.id}/contacts/#{own.contact_id}" }
 

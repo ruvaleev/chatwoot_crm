@@ -64,4 +64,19 @@ describe ActionCableListener do
       .with(array_excluding(freelancer.pubsub_token), 'conversation.updated',
             hash_including(meta: hash_including(sender: hash_including(phone_number: '+15550104477'))))
   end
+
+  it 'tells the freelancer to drop a conversation reassigned to someone else' do
+    conversation = create(:conversation, account: account, inbox: inbox, assignee: freelancer)
+    conversation.update!(assignee: manager)
+
+    expect(ActionCableBroadcastJob).to have_received(:perform_later)
+      .with([freelancer.pubsub_token], 'conversation.crm_access_revoked', hash_including(id: conversation.display_id))
+  end
+
+  it 'does not revoke anything from agents who keep seeing the conversation' do
+    conversation = create(:conversation, account: account, inbox: inbox, assignee: manager)
+    conversation.update!(assignee: freelancer)
+
+    expect(ActionCableBroadcastJob).not_to have_received(:perform_later).with(anything, 'conversation.crm_access_revoked', anything)
+  end
 end

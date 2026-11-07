@@ -10,6 +10,7 @@ UPSTREAM_SPECS=(
   spec/builders/notification_builder_spec.rb
   spec/controllers/api/v1/accounts/contacts
   spec/controllers/api/v1/accounts/contacts_controller_spec.rb
+  spec/controllers/api/v1/accounts/conversations_controller_spec.rb
   spec/controllers/api/v1/accounts/search_controller_spec.rb
   spec/finders/conversation_finder_spec.rb
   spec/listeners/action_cable_listener_spec.rb
