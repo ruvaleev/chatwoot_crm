@@ -60,4 +60,10 @@ describe Custom::Whatsapp::ConnectService do
       expect { service.perform }.to raise_error(RuntimeError, /401/)
     end
   end
+
+  it 'gives Evolution enough time to answer the outgoing message webhook' do
+    service.perform
+
+    expect(GlobalConfig.get_value('WEBHOOK_TIMEOUT')).to eq(described_class::WEBHOOK_TIMEOUT_SECONDS)
+  end
 end

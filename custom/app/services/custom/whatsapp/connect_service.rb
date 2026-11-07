@@ -18,11 +18,15 @@ class Custom::Whatsapp::ConnectService
     chatwootMergeBrazilContacts: false,
     chatwootOrganization: 'WhatsApp'
   }.freeze
+  # Chatwoot hands outgoing messages to Evolution via the inbox webhook, and Evolution answers only after sending
+  # to WhatsApp (3–5 s locally). With the 5 s default a delivered message is marked as failed.
+  WEBHOOK_TIMEOUT_SECONDS = 30
 
   pattr_initialize [:account!, :instance_name!, :inbox_name!]
 
   # Returns Evolution's connect response: connection state when already linked, QR data otherwise.
   def perform
+    InstallationConfig.find_or_initialize_by(name: 'WEBHOOK_TIMEOUT').update!(value: WEBHOOK_TIMEOUT_SECONDS)
     create_instance unless evolution_request(:get, '/instance/fetchInstances').any? { |instance| instance['name'] == instance_name }
     evolution_request(:get, "/instance/connect/#{instance_name}")
   end
