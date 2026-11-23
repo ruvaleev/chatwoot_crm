@@ -18,7 +18,7 @@ describe Custom::PhoneScrubber do
   end
 
   it 'treats queries with six or more digits as phone lookups' do
-    expect(described_class.phone_like?('+66 6284')).to be(true)
+    expect(described_class.phone_like?('+1 555 01')).to be(true)
     expect(described_class.phone_like?('order 12')).to be(false)
   end
 end

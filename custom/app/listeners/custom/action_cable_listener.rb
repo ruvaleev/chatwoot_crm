@@ -24,21 +24,20 @@ module Custom::ActionCableListener
     broadcast(conversation.account, [previous_assignee.pubsub_token], CONVERSATION_ACCESS_REVOKED, { id: conversation.display_id })
   end
 
-  def user_tokens(account, agents)
-    conversation = Custom::EventContext.conversation
-    return super if conversation.blank?
-
-    super - account.users.reject { |user| conversation.crm_visible_to?(user) }.map(&:pubsub_token)
-  end
-
-  # Freelancers get the same events without client phone numbers. Every user listens to the account stream
-  # (RoomChannel), so with freelancers around contact events are addressed to the other users one by one.
+  # Freelancers get events only of conversations they see (checked here, not in user_tokens: some handlers, such as
+  # conversation_mentioned, address users directly) and without client phone numbers. Every user listens to the
+  # account stream (RoomChannel), so with freelancers around contact events are addressed to the other users one by one.
   def broadcast(account, tokens, event_name, data)
-    freelancer_tokens = account.users.select(&:crm_freelancer?).map(&:pubsub_token)
-    return super if freelancer_tokens.empty?
+    freelancers = account.users.select(&:crm_freelancer?)
+    return super if freelancers.empty?
 
     tokens = account.users.reject(&:crm_freelancer?).map(&:pubsub_token) if tokens == [account_token(account)]
-    super(account, tokens - freelancer_tokens, event_name, data)
-    super(account, tokens & freelancer_tokens, event_name, Custom::PhoneScrubber.new(locale: account.locale).scrub(data))
+    super(account, tokens - freelancers.map(&:pubsub_token), event_name, data)
+    super(account, tokens & crm_visible_tokens(freelancers), event_name, Custom::PhoneScrubber.new(locale: account.locale).scrub(data))
+  end
+
+  def crm_visible_tokens(freelancers)
+    conversation = Custom::EventContext.conversation
+    freelancers.select { |user| conversation.nil? || conversation.crm_visible_to?(user) }.map(&:pubsub_token)
   end
 end

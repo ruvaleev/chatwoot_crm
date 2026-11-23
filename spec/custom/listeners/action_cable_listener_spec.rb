@@ -43,6 +43,14 @@ describe ActionCableListener do
       .with(array_excluding(freelancer.pubsub_token), 'conversation.typing_on', anything)
   end
 
+  it 'does not send the freelancer a mention in a conversation they cannot see' do
+    conversation = create(:conversation, account: account, inbox: inbox, assignee: manager)
+
+    listener.conversation_mentioned(Events::Base.new('conversation.mentioned', Time.zone.now, conversation: conversation, user: freelancer))
+
+    expect(ActionCableBroadcastJob).not_to have_received(:perform_later).with(include(freelancer.pubsub_token), anything, anything)
+  end
+
   it 'sends contact events to everyone except freelancers instead of the account stream' do
     contact = create(:contact, account: account)
 

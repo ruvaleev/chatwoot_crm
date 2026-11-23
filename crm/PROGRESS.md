@@ -82,7 +82,7 @@
 - `Custom::PhoneScrubber` — очистка JSON для фрилансера по ключам, поэтому работает везде, куда встроен контакт
   (карточка, `meta.sender` диалогов, `sender` сообщений, уведомления, поиск): `phone_number` → `null`;
   `identifier` и `source_id` с 6+ цифрами подряд → `null` (у Evolution `identifier` = `<номер>@s.whatsapp.net`);
-  `name`, состоящее из номера (WhatsApp-контакт без имени), → «Клиент •••77» (I18n `crm.contact.masked_name`,
+  `name`, состоящее из номера (WhatsApp-контакт без имени), → «Клиент •••NN» (I18n `crm.contact.masked_name`,
   ru/en, `custom/config/locales`). Текст сообщений не трогается: если клиент сам написал номер, его видно.
 - HTTP: `after_action` на `Api::V1::Accounts::BaseController` (новая точка расширения, правка upstream в
   реестре) — все JSON-ответы `/api/v1/accounts/*` фрилансеру проходят через очистку.

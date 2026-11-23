@@ -156,13 +156,13 @@ RSpec.describe 'Freelancer isolation', type: :request do
     end
 
     it 'cannot be found by the freelancer through search' do
-      get "/api/v1/accounts/#{account.id}/contacts/search", params: { q: '628492' }, headers: freelancer.create_new_auth_token, as: :json
+      get "/api/v1/accounts/#{account.id}/contacts/search", params: { q: '550104' }, headers: freelancer.create_new_auth_token, as: :json
       expect(response.parsed_body['payload']).to be_empty
 
-      get "/api/v1/accounts/#{account.id}/search", params: { q: '628492' }, headers: freelancer.create_new_auth_token, as: :json
+      get "/api/v1/accounts/#{account.id}/search", params: { q: '550104' }, headers: freelancer.create_new_auth_token, as: :json
       expect(response.parsed_body['payload']).to include('contacts' => [], 'conversations' => [])
 
-      filter = [{ attribute_key: 'phone_number', filter_operator: 'contains', values: ['628'], query_operator: nil }]
+      filter = [{ attribute_key: 'phone_number', filter_operator: 'contains', values: ['555'], query_operator: nil }]
       post "/api/v1/accounts/#{account.id}/contacts/filter", params: { payload: filter }, headers: freelancer.create_new_auth_token, as: :json
       expect(response.parsed_body['payload']).to be_empty
     end
@@ -180,5 +180,39 @@ RSpec.describe 'Freelancer isolation', type: :request do
     NotificationBuilder.new(notification_type: 'conversation_mention', user: freelancer, account: account, primary_actor: foreign).perform
 
     expect(freelancer.notifications).to be_empty
+  end
+
+  it 'hides notifications of conversations reassigned away from the freelancer' do
+    create(:notification, user: freelancer, account: account, primary_actor: own, notification_type: 'conversation_assignment')
+    own.update!(assignee: manager)
+    create(:message, account: account, inbox: inbox, conversation: own, content: 'crm after reassignment')
+
+    get "/api/v1/accounts/#{account.id}/notifications", headers: freelancer.create_new_auth_token, as: :json
+
+    expect(response.parsed_body.dig('data', 'payload')).to be_empty
+    expect(response.parsed_body.dig('data', 'meta')).to include('count' => 0, 'unread_count' => 0)
+  end
+
+  it 'denies merging a client of other conversations' do
+    post "/api/v1/accounts/#{account.id}/actions/contact_merge", params: { base_contact_id: own.contact_id, mergee_contact_id: foreign.contact_id },
+                                                                 headers: freelancer.create_new_auth_token, as: :json
+
+    expect(response).to have_http_status(:not_found)
+    expect(foreign.reload.contact).to be_present
+  end
+
+  it 'denies companies, which list and search all contacts of the account' do
+    account.enable_features!('companies')
+    company = create(:company, account: account)
+    foreign.contact.update!(company: company)
+
+    get "/api/v1/accounts/#{account.id}/companies/#{company.id}/contacts", headers: freelancer.create_new_auth_token, as: :json
+    expect(response).to have_http_status(:unauthorized)
+
+    get "/api/v1/accounts/#{account.id}/companies", headers: freelancer.create_new_auth_token, as: :json
+    expect(response).to have_http_status(:unauthorized)
+
+    get "/api/v1/accounts/#{account.id}/companies/#{company.id}/contacts", headers: manager.create_new_auth_token, as: :json
+    expect(response).to have_http_status(:success)
   end
 end
