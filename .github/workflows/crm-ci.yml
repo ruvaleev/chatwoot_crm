@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: pgvector/pgvector:pg16
+        image: pgvector/pgvector:0.8.7-pg18
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: ''
@@ -28,7 +28,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
       redis:
-        image: redis:alpine
+        image: redis:7.4.12-alpine
         ports:
           - 6379:6379
         options: --entrypoint redis-server
@@ -38,6 +38,12 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - name: Prepare database
         run: bundle exec rake db:create db:schema:load
         env:

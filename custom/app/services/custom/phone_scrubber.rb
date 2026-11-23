@@ -5,6 +5,10 @@ class Custom::PhoneScrubber
   # Evolution API stores the WhatsApp JID (<phone>@s.whatsapp.net) as the contact identifier.
   PHONE_LIKE_KEYS = %w[identifier source_id].freeze
   MIN_PHONE_DIGITS = 6
+  # A number or a WhatsApp JID (<phone>@s.whatsapp.net). Message ids (WAID:<hex>) and UUIDs don't match.
+  PHONE_ID = /\A\+?[\d\s\-().]+(@[\w.]+)?\z/
+  PHONE_NUMBER = /\A[+\d\s\-().]+\z/
+  PHONE_IN_TEXT = /\+?\d[\d\s\-().]*\d/
 
   pattr_initialize [:locale!]
 
@@ -24,14 +28,21 @@ class Custom::PhoneScrubber
 
   def scrub_pair(key, value)
     return nil if key == 'phone_number'
-    return nil if PHONE_LIKE_KEYS.include?(key) && value.to_s.match?(/\d{#{MIN_PHONE_DIGITS}}/o)
-    # WhatsApp contacts without a profile name are named after their number.
-    return masked_name(value) if key == 'name' && value.to_s.match?(/\A[+\d\s\-().]+\z/) && self.class.phone_like?(value)
+    return nil if PHONE_LIKE_KEYS.include?(key) && value.to_s.match?(PHONE_ID) && self.class.phone_like?(value)
+    return scrub_name(value) if key == 'name' && value.is_a?(String)
 
     scrub(value)
   end
 
-  def masked_name(name)
-    I18n.t('crm.contact.masked_name', last_digits: name.delete('^0-9').last(2), locale: locale)
+  # WhatsApp contacts without a profile name are named after their number; others may carry it next to the name.
+  def scrub_name(name)
+    return name unless self.class.phone_like?(name)
+    return I18n.t('crm.contact.masked_name', last_digits: last_digits(name), locale: locale) if name.match?(PHONE_NUMBER)
+
+    name.gsub(PHONE_IN_TEXT) { |number| self.class.phone_like?(number) ? "#{MASK}#{last_digits(number)}" : number }
+  end
+
+  def last_digits(number)
+    number.delete('^0-9').last(2)
   end
 end

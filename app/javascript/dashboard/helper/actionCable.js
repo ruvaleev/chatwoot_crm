@@ -15,6 +15,7 @@ import { VOICE_CALL_PROVIDERS } from 'dashboard/helper/inbox';
 import { markCallDismissed, isLocalCall } from 'dashboard/helper/voice';
 import { VOICE_CALL_DIRECTION } from 'dashboard/components-next/message/constants';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
+import { conversationListPageURL } from 'dashboard/helper/URLHelper';
 
 const { isImpersonating } = useImpersonation();
 const UNREAD_COUNTS_REFETCH_THROTTLE_MS = 5000;
@@ -128,9 +129,17 @@ class ActionCableConnector extends BaseActionCableConnector {
     this.fetchConversationStats();
   };
 
-  onConversationAccessRevoked = ({ id }) => {
-    this.app.$store.commit('DELETE_CONVERSATION', id);
+  onConversationAccessRevoked = async ({ id }) => {
+    const { $store } = this.app;
+    const isOpen = $store.getters.getSelectedChat.id === id;
+    $store.commit('DELETE_CONVERSATION', id);
     this.fetchConversationStats();
+    if (!isOpen) return;
+
+    const { router } = await import('dashboard/routes');
+    router.push(
+      conversationListPageURL({ accountId: $store.getters.getCurrentAccountId })
+    );
   };
 
   onConversationCreated = data => {

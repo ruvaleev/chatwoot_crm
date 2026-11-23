@@ -14,6 +14,8 @@ UPSTREAM_SPECS=(
   spec/controllers/api/v1/accounts/contacts
   spec/controllers/api/v1/accounts/contacts_controller_spec.rb
   spec/controllers/api/v1/accounts/conversations_controller_spec.rb
+  spec/controllers/api/v1/accounts/bulk_actions_controller_spec.rb
+  spec/controllers/api/v1/accounts_controller_spec.rb
   spec/controllers/api/v1/accounts/search_controller_spec.rb
   spec/finders/conversation_finder_spec.rb
   spec/listeners/action_cable_listener_spec.rb
@@ -23,5 +25,9 @@ UPSTREAM_SPECS=(
 )
 
 bundle exec rubocop custom spec/custom config/application.rb app/controllers/api/v1/accounts/base_controller.rb app/controllers/api/v1/accounts/contacts/base_controller.rb \
-  app/controllers/api/v1/accounts/actions/contact_merges_controller.rb app/finders/notification_finder.rb
+  app/controllers/api/v1/accounts/actions/contact_merges_controller.rb app/finders/notification_finder.rb \
+  app/controllers/api/v1/accounts/bulk_actions_controller.rb
+# Frontend files we changed and their specs (upstream's own spec included: our handler lives in its file).
+pnpm exec eslint app/javascript/dashboard/helper/actionCable.js app/javascript/dashboard/helper/specs/crmActionCable.spec.js
+pnpm exec vitest run app/javascript/dashboard/helper/specs/actionCable.spec.js app/javascript/dashboard/helper/specs/crmActionCable.spec.js
 bundle exec rspec spec/custom "${UPSTREAM_SPECS[@]}" "$@"

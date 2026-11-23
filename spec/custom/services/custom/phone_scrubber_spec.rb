@@ -21,4 +21,16 @@ describe Custom::PhoneScrubber do
     expect(described_class.phone_like?('+1 555 01')).to be(true)
     expect(described_class.phone_like?('order 12')).to be(false)
   end
+
+  it 'masks a number written next to the contact name' do
+    expect(scrubber.scrub('name' => 'Anna +1 555 010-44-77, office')).to eq('name' => 'Anna •••77, office')
+    expect(scrubber.scrub('name' => 'Room 101')).to eq('name' => 'Room 101')
+  end
+
+  it 'keeps ids that only happen to contain digits' do
+    payload = { 'source_id' => 'WAID:3EB0123456789ABC', 'contact_inbox' => { 'source_id' => '8a1d2c34-5e6f-4789-a012-345678901234' } }
+
+    expect(scrubber.scrub(payload)).to eq(payload)
+    expect(scrubber.scrub('source_id' => '15550104477')).to eq('source_id' => nil)
+  end
 end

@@ -215,4 +215,26 @@ RSpec.describe 'Freelancer isolation', type: :request do
     get "/api/v1/accounts/#{account.id}/companies/#{company.id}/contacts", headers: manager.create_new_auth_token, as: :json
     expect(response).to have_http_status(:success)
   end
+
+  it 'turns the companies feature off in the account the freelancer dashboard loads' do
+    account.enable_features!('companies')
+
+    get "/api/v1/accounts/#{account.id}", headers: freelancer.create_new_auth_token, as: :json
+    expect(response.parsed_body['features']).not_to have_key('companies')
+
+    get "/api/v1/accounts/#{account.id}", headers: manager.create_new_auth_token, as: :json
+    expect(response.parsed_body['features']).to include('companies' => true)
+  end
+
+  it 'labels in bulk only contacts the freelancer sees' do
+    params = { type: 'Contact', ids: [own.contact_id, foreign.contact_id], labels: { add: ['crm-vip'] } }
+
+    perform_enqueued_jobs do
+      post "/api/v1/accounts/#{account.id}/bulk_actions", params: params, headers: freelancer.create_new_auth_token, as: :json
+    end
+
+    expect(response).to have_http_status(:success)
+    expect(own.contact.reload.label_list).to eq(['crm-vip'])
+    expect(foreign.contact.reload.label_list).to be_empty
+  end
 end

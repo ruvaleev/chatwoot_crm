@@ -81,3 +81,6 @@ class Api::V1::Accounts::BulkActionsController < Api::V1::Accounts::BaseControll
     base_params.merge(common)
   end
 end
+
+# CRM: extension point for custom/ (crm/docs/core-changes.md)
+Api::V1::Accounts::BulkActionsController.prepend_mod_with('Api::V1::Accounts::BulkActionsController')
