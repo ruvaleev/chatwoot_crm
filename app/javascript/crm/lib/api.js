@@ -36,7 +36,13 @@ export const request = async (path, { method = 'GET', body, query } = {}) => {
   return data;
 };
 
-export const signIn = async (email, password) => {
+// Freelancers get a short login; the server stores it as an email on this reserved domain.
+export const LOGIN_DOMAIN = 'crm.invalid';
+const loginEmail = login =>
+  login.includes('@') ? login : `${login}@${LOGIN_DOMAIN}`;
+
+export const signIn = async (login, password) => {
+  const email = loginEmail(login);
   const response = await fetch('/auth/sign_in', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -76,8 +82,22 @@ export const accountApi = accountId => {
         method: 'PATCH',
         body: { freelancer_id: freelancerId },
       }),
+    restartNumber: id =>
+      request(`${base}/crm/numbers/${id}/restart`, { method: 'POST' }),
     logoutNumber: id =>
       request(`${base}/crm/numbers/${id}/logout`, { method: 'POST' }),
+    freelancers: () => request(`${base}/crm/freelancers`),
+    addFreelancer: body =>
+      request(`${base}/crm/freelancers`, { method: 'POST', body }),
+    moveFreelancer: (id, numberId) =>
+      request(`${base}/crm/freelancers/${id}`, {
+        method: 'PATCH',
+        body: { number_id: numberId },
+      }),
+    inviteFreelancer: id =>
+      request(`${base}/crm/freelancers/${id}/invite`, { method: 'POST' }),
+    removeFreelancer: id =>
+      request(`${base}/crm/freelancers/${id}`, { method: 'DELETE' }),
     unhide: id => request(`${base}/crm/chats/${id}/hide`, { method: 'DELETE' }),
     messages: (id, before) =>
       request(`${base}/conversations/${id}/messages`, { query: { before } }),
@@ -111,5 +131,15 @@ export const profileApi = {
     request('/api/v1/profile', {
       method: 'PUT',
       body: { profile: { ui_settings: uiSettings } },
+    }),
+};
+
+// The sign-in link: no session yet, the token is the credential.
+export const invitationApi = {
+  get: token => request(`/api/v1/crm/invitations/${token}`),
+  accept: (token, password, confirmation) =>
+    request(`/api/v1/crm/invitations/${token}`, {
+      method: 'POST',
+      body: { password, password_confirmation: confirmation },
     }),
 };

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { boot, isManager, isSignedIn, state } from './lib/store';
 import LoginView from './views/LoginView.vue';
+import InviteView from './views/InviteView.vue';
 import ChatsLayout from './views/ChatsLayout.vue';
 
 const router = createRouter({
@@ -21,12 +22,26 @@ const router = createRouter({
       component: ChatsLayout,
       meta: { manager: true },
     },
+    {
+      path: '/freelancers',
+      name: 'freelancers',
+      component: ChatsLayout,
+      meta: { manager: true },
+    },
+    {
+      path: '/invite/:token',
+      name: 'invite',
+      component: InviteView,
+      meta: { public: true, invite: true },
+    },
     { path: '/chats/:id(\\d+)', name: 'chat', component: ChatsLayout },
     { path: '/:pathMatch(.*)*', redirect: { name: 'chats' } },
   ],
 });
 
 router.beforeEach(async to => {
+  // A sign-in link opens even with someone already signed in on this device.
+  if (to.meta.invite) return true;
   if (to.meta.public) return isSignedIn() ? { name: 'chats' } : true;
   if (!isSignedIn()) return { name: 'login' };
   if (!state.ready) await boot(router);

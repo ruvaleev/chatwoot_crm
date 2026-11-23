@@ -31,6 +31,11 @@ class Custom::Api::V1::Accounts::Crm::NumbersController < Api::V1::Accounts::Bas
     head :ok
   end
 
+  def restart
+    evolution.restart(@instance)
+    head :ok
+  end
+
   def logout
     evolution.logout(@instance)
     head :ok

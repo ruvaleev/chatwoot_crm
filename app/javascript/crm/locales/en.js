@@ -146,4 +146,48 @@ export default {
   'numbers.logout': 'Disconnect number',
   'numbers.logout_confirm':
     'The number will be unlinked: its messages stop arriving until it is connected again with a QR code.',
+  'nav.freelancers': 'Freelancers',
+  'freelancers.title': 'Freelancers',
+  'freelancers.add': 'Add freelancer',
+  'freelancers.empty': 'No freelancers yet',
+  'freelancers.empty_text': 'Add a freelancer and send them a sign-in link.',
+  'freelancers.row': '{number} · clients: {n}',
+  'freelancers.no_number': 'no number',
+  'freelancers.invited': 'not signed in yet',
+  'freelancers.name': 'Name',
+  'freelancers.login': 'Login',
+  'freelancers.login_placeholder': 'anna.v',
+  'freelancers.login_hint':
+    'Latin letters, digits, dot and dash. The freelancer signs in with it.',
+  'freelancers.create': 'Add and get the link',
+  'freelancers.link_title': 'Sign-in link',
+  'freelancers.link_text':
+    'Send it to the freelancer. It works once and for 24 hours: they set a password with it.',
+  'freelancers.copy': 'Copy link',
+  'freelancers.copied': 'Link copied',
+  'freelancers.new_link': 'New sign-in link',
+  'freelancers.remove': 'Remove access',
+  'freelancers.remove_confirm':
+    'The freelancer loses access at once and their clients go back to New.',
+  'invite.title': 'Hello, {name}!',
+  'invite.login': 'Your login: {login}. Choose a password to sign in.',
+  'invite.password': 'Password',
+  'invite.confirmation': 'Password again',
+  'invite.rules':
+    'At least 6 characters: upper and lower case letters, a digit and a symbol.',
+  'invite.submit': 'Save and sign in',
+  'invite.mismatch': 'Passwords do not match',
+  'invite.broken': 'This link does not work',
+  'invite.broken_text':
+    'It was already used or has expired. Ask your manager for a new one.',
+  'invite.weak':
+    'The password does not fit: use upper and lower case letters, a digit and a symbol, at least 6 characters.',
+  'numbers.restart': 'Restart connection',
+  'numbers.restart_hint':
+    'If the number is connected but messages do not go out, restart the connection; no QR code is needed.',
+  'numbers.restarted': 'Restarting the connection',
+  'chat.number_down':
+    'The number is not connected: messages to the client do not go out now. Tell your manager.',
+  'chat.number_down_manager':
+    'The number is not connected: messages to the client do not go out now. Reconnect it under Numbers.',
 };

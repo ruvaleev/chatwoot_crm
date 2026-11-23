@@ -3,8 +3,16 @@
 module Custom::Concerns::User
   extend ActiveSupport::Concern
 
+  # Freelancers sign in with a short login; it is stored as an email on this reserved, undeliverable domain.
+  CRM_LOGIN_DOMAIN = 'crm.invalid'.freeze
+
   included do
     has_many :crm_hidden_conversations, class_name: 'Custom::HiddenConversation', dependent: :delete_all
+    has_many :crm_invitations, class_name: 'Custom::Invitation', dependent: :delete_all
+  end
+
+  def crm_login
+    email.delete_suffix("@#{CRM_LOGIN_DOMAIN}")
   end
 
   def crm_freelancer?

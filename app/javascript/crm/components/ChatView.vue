@@ -37,6 +37,10 @@ const subtitle = computed(() => {
     : inbox.name;
   return `${via} · ${status}`;
 });
+// Sent messages would not reach the client while the number is down.
+const numberDown = computed(
+  () => header.value?.number_state && header.value.number_state !== 'open'
+);
 const messages = computed(() =>
   chat.value.messages.filter(
     message => message.message_type !== MESSAGE_TYPE.activity || message.content
@@ -185,6 +189,14 @@ const showDay = index =>
       </div>
     </header>
 
+    <p
+      v-if="numberDown"
+      role="alert"
+      class="flex shrink-0 items-start gap-2 bg-danger-soft px-4 py-2 text-sm text-danger"
+    >
+      <span class="i-lucide-wifi-off mt-0.5 size-4 shrink-0" />
+      {{ isManager ? t('chat.number_down_manager') : t('chat.number_down') }}
+    </p>
     <button
       v-if="header?.brief"
       type="button"

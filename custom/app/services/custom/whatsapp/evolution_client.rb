@@ -18,6 +18,11 @@ class Custom::Whatsapp::EvolutionClient
     request(:get, "/instance/connectionState/#{name}").dig('instance', 'state')
   end
 
+  # Reopens the connection of a linked number without a new QR code.
+  def restart(name)
+    request(:post, "/instance/restart/#{name}")
+  end
+
   # Unlinks the phone; the instance and the chat history stay.
   def logout(name)
     request(:delete, "/instance/logout/#{name}")

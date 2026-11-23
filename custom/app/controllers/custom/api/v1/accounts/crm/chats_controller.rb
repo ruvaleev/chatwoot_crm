@@ -21,7 +21,9 @@ class Custom::Api::V1::Accounts::Crm::ChatsController < Api::V1::Accounts::BaseC
     @chats = filtered(hidden, shown).includes(:contact, :assignee, inbox: :members).page(params[:page]).per(PER_PAGE)
   end
 
-  def show; end
+  def show
+    @number_state = number_state
+  end
 
   def update
     @chat.update!(custom_attributes: @chat.custom_attributes.merge(update_attributes))
@@ -49,6 +51,17 @@ class Custom::Api::V1::Accounts::Crm::ChatsController < Api::V1::Accounts::BaseC
   end
 
   private
+
+  # Shown in the chat when the number is down. Evolution being unreachable must not keep the chat from opening.
+  def number_state
+    instance = @chat.inbox.crm_whatsapp_instance
+    return if instance.nil?
+
+    Custom::Whatsapp::EvolutionClient.new.state(instance)
+  rescue StandardError => e
+    Rails.logger.warn("CRM: number state of #{instance} unavailable: #{e.message}")
+    'unknown'
+  end
 
   def visible_chats
     Conversations::PermissionFilterService.new(Current.account.conversations, Current.user, Current.account).perform

@@ -1,5 +1,7 @@
 # Routes of the new interface (crm/PRD.md, stage D), appended so config/routes.rb stays untouched.
 Rails.application.routes.append do
+  get '/api/v1/crm/invitations/:token', to: 'custom/api/v1/crm/invitations#show', defaults: { format: 'json' }
+  post '/api/v1/crm/invitations/:token', to: 'custom/api/v1/crm/invitations#accept', defaults: { format: 'json' }
   get '/crm', to: 'custom/crm#index', as: :crm
   get '/crm/*path', to: 'custom/crm#index', format: false
 
@@ -11,9 +13,13 @@ Rails.application.routes.append do
         delete :hide, action: :unhide
       end
     end
+    resources :freelancers, only: [:index, :create, :update, :destroy] do
+      post :invite, on: :member
+    end
     resources :numbers, only: [:index, :create, :update] do
       member do
         post :connect
+        post :restart
         get :state
         post :logout
       end

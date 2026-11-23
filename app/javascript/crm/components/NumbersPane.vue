@@ -9,6 +9,7 @@ import {
   connectNumber,
   fetchNumbers,
   logoutNumber,
+  restartNumber,
   toast,
 } from '../lib/store';
 
@@ -111,6 +112,14 @@ const assign = (number, freelancerId) =>
     await assignNumber(number.id, freelancerId);
     await load();
     toast('toast.saved');
+  });
+
+// Linked, but messages do not go out: reopen the connection, no QR code needed.
+const restart = number =>
+  run(async () => {
+    await restartNumber(number.id);
+    toast('numbers.restarted');
+    await load();
   });
 
 const logout = number =>
@@ -298,6 +307,15 @@ onBeforeUnmount(stopQr);
         {{ t('numbers.reconnect') }}
       </button>
       <template v-else>
+        <p class="mb-2 text-xs text-muted">{{ t('numbers.restart_hint') }}</p>
+        <button
+          type="button"
+          class="mb-2 h-11 w-full rounded-lg bg-accent font-medium text-on-accent disabled:opacity-50"
+          :disabled="busy"
+          @click="restart(selected)"
+        >
+          {{ t('numbers.restart') }}
+        </button>
         <button
           v-if="!confirmLogout"
           type="button"

@@ -322,6 +322,16 @@ export const connectNumber = id => api.connectNumber(id);
 export const assignNumber = (id, freelancerId) =>
   api.assignNumber(id, freelancerId);
 export const logoutNumber = id => api.logoutNumber(id);
+export const restartNumber = id => api.restartNumber(id);
+
+// ---------- freelancers (managers) ----------
+
+export const fetchFreelancers = () => api.freelancers();
+export const addFreelancer = body => api.addFreelancer(body);
+export const moveFreelancer = (id, numberId) =>
+  api.moveFreelancer(id, numberId);
+export const inviteFreelancer = id => api.inviteFreelancer(id);
+export const removeFreelancer = id => api.removeFreelancer(id);
 
 // ---------- real-time ----------
 

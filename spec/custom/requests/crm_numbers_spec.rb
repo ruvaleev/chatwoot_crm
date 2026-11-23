@@ -83,6 +83,27 @@ RSpec.describe 'CRM numbers API', type: :request do
     expect(response).to have_http_status(:unprocessable_content)
   end
 
+  it 'restarts the connection of a number without a QR code' do
+    restart = stub_request(:post, "#{evolution_url}/instance/restart/number-a").to_return(status: 200, body: '{}', headers: headers)
+
+    post "#{numbers_path}/#{number.id}/restart", headers: manager.create_new_auth_token, as: :json
+
+    expect(restart).to have_been_made
+  end
+
+  it 'shows in the chat whether its number is connected' do
+    chat = create(:conversation, account: account, inbox: number)
+    state_url = "#{evolution_url}/instance/connectionState/number-a"
+    stub_request(:get, state_url).to_return(status: 200, body: { instance: { state: 'close' } }.to_json, headers: headers)
+
+    get "/api/v1/accounts/#{account.id}/crm/chats/#{chat.display_id}", headers: manager.create_new_auth_token, as: :json
+    expect(response.parsed_body['number_state']).to eq('close')
+
+    stub_request(:get, state_url).to_return(status: 502, body: 'Bad Gateway')
+    get "/api/v1/accounts/#{account.id}/crm/chats/#{chat.display_id}", headers: manager.create_new_auth_token, as: :json
+    expect(response.parsed_body['number_state']).to eq('unknown')
+  end
+
   it 'disconnects a number in Evolution' do
     logout = stub_request(:delete, "#{evolution_url}/instance/logout/number-a").to_return(status: 200, body: '{}', headers: headers)
 

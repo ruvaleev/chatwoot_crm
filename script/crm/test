@@ -26,7 +26,8 @@ UPSTREAM_SPECS=(
 
 bundle exec rubocop custom spec/custom config/application.rb app/controllers/api/v1/accounts/base_controller.rb app/controllers/api/v1/accounts/contacts/base_controller.rb \
   app/controllers/api/v1/accounts/actions/contact_merges_controller.rb app/finders/notification_finder.rb \
-  app/controllers/api/v1/accounts/bulk_actions_controller.rb db/migrate/20261123062525_create_crm_hidden_conversations.rb
+  app/controllers/api/v1/accounts/bulk_actions_controller.rb db/migrate/20261123062525_create_crm_hidden_conversations.rb \
+  db/migrate/20261123092416_create_crm_invitations.rb
 # Frontend files we changed and their specs (upstream's own spec included: our handler lives in its file).
 pnpm exec eslint app/javascript/dashboard/helper/actionCable.js app/javascript/dashboard/helper/specs/crmActionCable.spec.js \
   app/javascript/crm app/javascript/entrypoints/crm.js

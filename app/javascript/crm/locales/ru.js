@@ -148,4 +148,49 @@ export default {
   'numbers.logout': 'Отключить номер',
   'numbers.logout_confirm':
     'Номер отвяжется от системы: сообщения с него перестанут приходить, пока его не подключат заново по QR-коду.',
+  'nav.freelancers': 'Фрилансеры',
+  'freelancers.title': 'Фрилансеры',
+  'freelancers.add': 'Добавить фрилансера',
+  'freelancers.empty': 'Фрилансеров пока нет',
+  'freelancers.empty_text':
+    'Добавьте фрилансера и отправьте ему ссылку для входа.',
+  'freelancers.row': '{number} · клиентов: {n}',
+  'freelancers.no_number': 'без номера',
+  'freelancers.invited': 'ещё не входил',
+  'freelancers.name': 'Имя',
+  'freelancers.login': 'Логин',
+  'freelancers.login_placeholder': 'anna.v',
+  'freelancers.login_hint':
+    'Латиница, цифры, точка и дефис. С ним фрилансер будет входить.',
+  'freelancers.create': 'Добавить и получить ссылку',
+  'freelancers.link_title': 'Ссылка для входа',
+  'freelancers.link_text':
+    'Отправьте её фрилансеру. Она работает один раз и 24 часа: по ней он задаст пароль.',
+  'freelancers.copy': 'Скопировать ссылку',
+  'freelancers.copied': 'Ссылка скопирована',
+  'freelancers.new_link': 'Новая ссылка для входа',
+  'freelancers.remove': 'Отключить доступ',
+  'freelancers.remove_confirm':
+    'Фрилансер сразу потеряет доступ, а его клиенты вернутся в «Новые».',
+  'invite.title': 'Здравствуйте, {name}!',
+  'invite.login': 'Ваш логин: {login}. Придумайте пароль для входа.',
+  'invite.password': 'Пароль',
+  'invite.confirmation': 'Пароль ещё раз',
+  'invite.rules':
+    'Не короче 6 символов: заглавная и строчная буквы, цифра и спецсимвол.',
+  'invite.submit': 'Сохранить и войти',
+  'invite.mismatch': 'Пароли не совпадают',
+  'invite.broken': 'Ссылка не работает',
+  'invite.broken_text':
+    'Она уже использована или устарела. Попросите у менеджера новую.',
+  'invite.weak':
+    'Пароль не подходит: нужны заглавная и строчная буквы, цифра и спецсимвол, не короче 6 символов.',
+  'numbers.restart': 'Перезапустить соединение',
+  'numbers.restart_hint':
+    'Если номер подключён, но сообщения не уходят, перезапустите соединение — QR-код не понадобится.',
+  'numbers.restarted': 'Соединение перезапускается',
+  'chat.number_down':
+    'Номер не подключён: сообщения клиенту сейчас не уходят. Сообщите менеджеру.',
+  'chat.number_down_manager':
+    'Номер не подключён: сообщения клиенту сейчас не уходят. Переподключите его в «Номерах».',
 };
