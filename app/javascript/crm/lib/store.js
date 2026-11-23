@@ -314,6 +314,15 @@ export const renameContact = async name => {
   patchRow(state.chat.id, { contact: { ...contact } });
 };
 
+// ---------- numbers (managers) ----------
+
+export const fetchNumbers = () => api.numbers();
+export const addNumber = name => api.addNumber(name);
+export const connectNumber = id => api.connectNumber(id);
+export const assignNumber = (id, freelancerId) =>
+  api.assignNumber(id, freelancerId);
+export const logoutNumber = id => api.logoutNumber(id);
+
 // ---------- real-time ----------
 
 const openChatHeader = async id => {

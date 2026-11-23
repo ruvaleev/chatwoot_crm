@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import ChatList from '../components/ChatList.vue';
 import ChatView from '../components/ChatView.vue';
 import SettingsPane from '../components/SettingsPane.vue';
+import NumbersPane from '../components/NumbersPane.vue';
 import { t } from '../lib/i18n';
 import { closeChat } from '../lib/store';
 
@@ -21,6 +22,7 @@ const chatId = computed(() =>
       :class="chatId ? 'hidden md:flex' : 'flex'"
     >
       <SettingsPane v-if="route.name === 'settings'" />
+      <NumbersPane v-else-if="route.name === 'numbers'" />
       <ChatList
         v-else
         :hidden-view="route.name === 'hidden'"

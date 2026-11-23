@@ -66,6 +66,18 @@ export const accountApi = accountId => {
     handoff: (id, body) =>
       request(`${base}/crm/chats/${id}/handoff`, { method: 'POST', body }),
     templates: () => request(`${base}/canned_responses`),
+    numbers: () => request(`${base}/crm/numbers`),
+    addNumber: name =>
+      request(`${base}/crm/numbers`, { method: 'POST', body: { name } }),
+    connectNumber: id =>
+      request(`${base}/crm/numbers/${id}/connect`, { method: 'POST' }),
+    assignNumber: (id, freelancerId) =>
+      request(`${base}/crm/numbers/${id}`, {
+        method: 'PATCH',
+        body: { freelancer_id: freelancerId },
+      }),
+    logoutNumber: id =>
+      request(`${base}/crm/numbers/${id}/logout`, { method: 'POST' }),
     unhide: id => request(`${base}/crm/chats/${id}/hide`, { method: 'DELETE' }),
     messages: (id, before) =>
       request(`${base}/conversations/${id}/messages`, { query: { before } }),

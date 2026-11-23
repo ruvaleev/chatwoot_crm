@@ -27,14 +27,14 @@ class Custom::Whatsapp::ConnectService
   # Returns Evolution's connect response: connection state when already linked, QR data otherwise.
   def perform
     InstallationConfig.find_or_initialize_by(name: 'WEBHOOK_TIMEOUT').update!(value: WEBHOOK_TIMEOUT_SECONDS)
-    create_instance unless evolution_request(:get, '/instance/fetchInstances').any? { |instance| instance['name'] == instance_name }
-    evolution_request(:get, "/instance/connect/#{instance_name}")
+    evolution.create(instance_payload) unless evolution.instances.any? { |instance| instance['name'] == instance_name }
+    evolution.connect(instance_name)
   end
 
   private
 
-  def create_instance
-    evolution_request(:post, '/instance/create', body: instance_payload.to_json)
+  def evolution
+    @evolution ||= Custom::Whatsapp::EvolutionClient.new
   end
 
   def instance_payload
@@ -64,13 +64,5 @@ class Custom::Whatsapp::ConnectService
   # URL Evolution uses to reach Chatwoot; differs from FRONTEND_URL on the server (internal network).
   def chatwoot_url
     ENV.fetch('CRM_EVOLUTION_CHATWOOT_URL') { ENV.fetch('FRONTEND_URL') }
-  end
-
-  def evolution_request(method, path, body: nil)
-    response = HTTParty.send(method, "#{ENV.fetch('EVOLUTION_API_URL')}#{path}",
-                             body: body, headers: { 'apikey' => ENV.fetch('EVOLUTION_API_KEY'), 'Content-Type' => 'application/json' })
-    raise "Evolution API #{method.upcase} #{path} failed: #{response.code} #{response.body}" unless response.success?
-
-    response.parsed_response
   end
 end

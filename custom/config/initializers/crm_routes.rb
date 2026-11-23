@@ -11,5 +11,12 @@ Rails.application.routes.append do
         delete :hide, action: :unhide
       end
     end
+    resources :numbers, only: [:index, :create, :update] do
+      member do
+        post :connect
+        get :state
+        post :logout
+      end
+    end
   end
 end
