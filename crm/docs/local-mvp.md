@@ -44,11 +44,16 @@ bin/dev   # = foreman start -f Procfile.crm; первое открытие ст�
 `Procfile.dev` из upstream без файла `.env` не запустит Sidekiq: CLI `dotenv` требует `.env`.
 Путь к Evolution можно переопределить через `EVOLUTION_DIR`.
 
-Проверка: `curl -s localhost:8080` (Evolution) возвращает JSON с версией, Chatwoot — `http://localhost:3000`.
+Проверка: `curl -s localhost:8080` (Evolution) возвращает JSON с версией, Chatwoot — `http://127.0.0.1:3000`.
+
+`FRONTEND_URL` в `.env.development.local` — `http://127.0.0.1:3000`, и Chatwoot открывать по этому адресу.
+С `localhost` медиа из Chatwoot (голосовые, фото, документы) молча не уходят в WhatsApp: Evolution 2.3.7 проверяет
+ссылку на вложение `isURL` из class-validator, а он не принимает адрес без доменной зоны. Сессия браузера
+привязана к адресу: после смены — войти заново.
 
 ## Подключить номер
 
-1. Узнать id аккаунта: в адресе Chatwoot `http://localhost:3000/app/accounts/<id>/...`.
+1. Узнать id аккаунта: в адресе Chatwoot `http://127.0.0.1:3000/app/accounts/<id>/...`.
 2. Выполнить:
    ```bash
    bundle exec rake "crm:whatsapp:connect[number-a,Номер A,<id>]"
@@ -74,7 +79,7 @@ bin/dev   # = foreman start -f Procfile.crm; первое открытие ст�
 ## Люди и передача клиента
 
 1. Settings → Agents → добавить менеджера (Administrator) и фрилансера (Agent). Без SMTP пароль задаётся
-   через super admin: `http://localhost:3000/super_admin` → Users.
+   через super admin: `http://127.0.0.1:3000/super_admin` → Users.
 2. Settings → Inboxes → «Номер A» → Collaborators: фрилансер (только свой inbox), менеджер.
 3. Пометить фрилансера (роль **Agent**, не Administrator). В `bin/rails console`:
    ```ruby
