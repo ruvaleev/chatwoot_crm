@@ -80,7 +80,7 @@ RSpec.describe 'CRM chats API', type: :request do
   it 'rejects an unknown filter' do
     get chats_path, params: { filter: 'everything' }, headers: freelancer.create_new_auth_token
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
   end
 
   it 'denies chats of other conversations' do
@@ -108,13 +108,13 @@ RSpec.describe 'CRM chats API', type: :request do
     expect(own.reload.custom_attributes).to include('crm_status' => 'won', 'crm_deal_amount' => '500')
 
     patch "#{chats_path}/#{own.display_id}", params: { status: 'qualifying' }, headers: freelancer.create_new_auth_token, as: :json
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(own.reload.crm_status).to eq('won')
   end
 
   it 'rejects an unknown status from other agents' do
     patch "#{chats_path}/#{own.display_id}", params: { status: 'archived' }, headers: manager.create_new_auth_token, as: :json
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
   end
 end

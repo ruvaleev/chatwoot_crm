@@ -2,6 +2,7 @@ plugins:
   - rubocop-performance
   - rubocop-rails
   - rubocop-rspec
+  - rubocop-rspec_rails # CRM: see crm/docs/core-changes.md
   - rubocop-factory_bot
 
 require:
