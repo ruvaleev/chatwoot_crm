@@ -3,6 +3,10 @@
 module Custom::Concerns::User
   extend ActiveSupport::Concern
 
+  included do
+    has_many :crm_hidden_conversations, class_name: 'Custom::HiddenConversation', dependent: :delete_all
+  end
+
   def crm_freelancer?
     custom_attributes['crm_freelancer'] == true
   end

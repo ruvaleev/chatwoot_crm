@@ -1,0 +1,13 @@
+json.partial! 'custom/api/v1/accounts/crm/chats/chat', chat: @chat
+json.hidden Current.user.crm_hidden_conversations.exists?(conversation: @chat)
+json.deal @chat.crm_deal
+json.brief do
+  brief = @chat.crm_brief
+  if brief
+    json.content brief.content
+    json.author brief.sender&.name
+    json.created_at brief.created_at.to_i
+  else
+    json.nil!
+  end
+end

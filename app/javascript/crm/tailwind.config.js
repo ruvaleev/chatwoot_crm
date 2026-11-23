@@ -1,0 +1,140 @@
+// Tailwind for the CRM app only (crm/PRD.md, stage D): scans just this folder, so its CSS carries no classes of the
+// old dashboard. Colours are the mockup tokens (crm/design/mockups) as CSS variables, light and dark.
+const plugin = require('tailwindcss/plugin');
+const {
+  iconsPlugin,
+  getIconCollections,
+} = require('@egoist/tailwindcss-icons');
+
+const light = {
+  '--app': '#f0f2f5',
+  '--panel': '#ffffff',
+  '--head': '#f0f2f5',
+  '--wall': '#ebe7e1',
+  '--hover': '#f5f6f6',
+  '--active': '#e9ebfa',
+  '--line': '#e6e9eb',
+  '--ink': '#111b21',
+  '--muted': '#54656f',
+  '--faint': '#8696a0',
+  '--accent': '#4a52d1',
+  '--accent-strong': '#3d44bb',
+  '--accent-soft': '#e6e8fb',
+  '--accent-ink': '#3a41b8',
+  '--on-accent': '#ffffff',
+  '--bubble-in': '#ffffff',
+  '--bubble-out': '#dfe2fb',
+  '--note': '#fff3c4',
+  '--note-line': '#e2c35c',
+  '--note-ink': '#8a6400',
+  '--danger': '#d63b3b',
+  '--danger-soft': '#fde8e8',
+  '--ok': '#1f8a57',
+  '--ok-soft': '#e3f4ea',
+  '--warn': '#9a6400',
+  '--warn-soft': '#fff2d9',
+  '--chip': '#f0f2f5',
+  '--shadow': '0 6px 24px rgba(11, 20, 26, .16)',
+  colorScheme: 'light',
+};
+const dark = {
+  '--app': '#0c1317',
+  '--panel': '#111b21',
+  '--head': '#202c33',
+  '--wall': '#0b141a',
+  '--hover': '#1c272d',
+  '--active': '#262b52',
+  '--line': '#222d34',
+  '--ink': '#e9edef',
+  '--muted': '#aebac1',
+  '--faint': '#8696a0',
+  '--accent': '#8a91f5',
+  '--accent-strong': '#9ea4f7',
+  '--accent-soft': '#272c55',
+  '--accent-ink': '#aeb3ff',
+  '--on-accent': '#0d0f26',
+  '--bubble-in': '#202c33',
+  '--bubble-out': '#2c3168',
+  '--note': '#3a3313',
+  '--note-line': '#6e5c22',
+  '--note-ink': '#e5c560',
+  '--danger': '#f26d6d',
+  '--danger-soft': '#3a1d20',
+  '--ok': '#4fc28c',
+  '--ok-soft': '#133027',
+  '--warn': '#e3a64a',
+  '--warn-soft': '#352a14',
+  '--chip': '#202c33',
+  '--shadow': '0 6px 24px rgba(0, 0, 0, .55)',
+  colorScheme: 'dark',
+};
+const token = name => `var(--${name})`;
+const tokens = names =>
+  Object.fromEntries(names.map(name => [name, token(name)]));
+
+module.exports = {
+  content: { relative: true, files: ['./**/*.{vue,js}', '!./specs/**'] },
+  theme: {
+    extend: {
+      colors: tokens([
+        'app',
+        'panel',
+        'head',
+        'wall',
+        'hover',
+        'active',
+        'line',
+        'ink',
+        'muted',
+        'faint',
+        'accent',
+        'accent-strong',
+        'accent-soft',
+        'accent-ink',
+        'on-accent',
+        'bubble-in',
+        'bubble-out',
+        'note',
+        'note-line',
+        'note-ink',
+        'danger',
+        'danger-soft',
+        'ok',
+        'ok-soft',
+        'warn',
+        'warn-soft',
+        'chip',
+      ]),
+      boxShadow: { pop: token('shadow') },
+      fontFamily: {
+        sans: [
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          'Roboto',
+          '"Helvetica Neue"',
+          'Arial',
+          'sans-serif',
+        ],
+      },
+    },
+  },
+  plugins: [
+    iconsPlugin({ collections: getIconCollections(['lucide']) }),
+    plugin(({ addBase }) => {
+      addBase({
+        ':root': light,
+        '@media (prefers-color-scheme: dark)': {
+          ':root:not([data-theme="light"])': dark,
+        },
+        ':root[data-theme="dark"]': dark,
+        'html, body, #crm-app': { height: '100%' },
+        body: {
+          backgroundColor: token('app'),
+          color: token('ink'),
+          WebkitTapHighlightColor: 'transparent',
+        },
+      });
+    }),
+  ],
+};

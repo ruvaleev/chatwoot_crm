@@ -1,0 +1,87 @@
+import { locale, t } from './i18n';
+
+// Until the team settings exist (stage D3) the threshold is the one from the brief.
+export const OVERDUE_MINUTES = 10;
+export const MESSAGE_TYPE = { incoming: 0, outgoing: 1, activity: 2 };
+
+const startOfDay = date =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+const DAY = 86400000;
+
+export const waitingMinutes = (waitingSince, now = Date.now()) =>
+  waitingSince
+    ? Math.max(0, Math.floor((now - waitingSince * 1000) / 60000))
+    : 0;
+
+export const isOverdue = (chat, now = Date.now()) =>
+  Boolean(chat.waiting_since) &&
+  waitingMinutes(chat.waiting_since, now) >= OVERDUE_MINUTES;
+
+export const waitingLabel = minutes =>
+  minutes < 60
+    ? t('wait.minutes', { n: minutes })
+    : t('wait.hours', { n: Math.floor(minutes / 60) });
+
+export const clock = unix =>
+  new Intl.DateTimeFormat(locale.value, {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(unix * 1000));
+
+// Like a chat list: time today, "Yesterday", then a short date.
+export const listTime = (unix, now = new Date()) => {
+  if (!unix) return '';
+  const date = new Date(unix * 1000);
+  const days = Math.round((startOfDay(now) - startOfDay(date)) / DAY);
+  if (days === 0) return clock(unix);
+  if (days === 1) return t('time.yesterday');
+  return new Intl.DateTimeFormat(locale.value, {
+    day: 'numeric',
+    month: 'short',
+  }).format(date);
+};
+
+export const dayLabel = (unix, now = new Date()) => {
+  const date = new Date(unix * 1000);
+  const days = Math.round((startOfDay(now) - startOfDay(date)) / DAY);
+  if (days === 0) return t('day.today');
+  if (days === 1) return t('day.yesterday');
+  return new Intl.DateTimeFormat(locale.value, {
+    day: 'numeric',
+    month: 'long',
+  }).format(date);
+};
+
+export const sameDay = (a, b) =>
+  startOfDay(new Date(a * 1000)) === startOfDay(new Date(b * 1000));
+
+const previewKind = type =>
+  ['image', 'video', 'audio'].includes(type) ? type : 'file';
+
+export const previewText = lastMessage => {
+  if (!lastMessage) return t('preview.empty');
+  if (lastMessage.content) return lastMessage.content;
+  if (!lastMessage.attachment_type) return '';
+  const key = `preview.${previewKind(lastMessage.attachment_type)}`;
+  // eslint-disable-next-line @intlify/vue-i18n/no-dynamic-keys -- our own t(), keys are in locales/
+  return t(key);
+};
+
+// Evolution picks WhatsApp's message type from the file extension of the attachment URL, so a recording must end in
+// an audio extension it knows. Chrome records webm/opus: named .ogg it is sent as a voice note (Evolution converts it).
+export const voiceFileName = mimeType =>
+  mimeType.includes('mp4') ? 'voice.m4a' : 'voice.ogg';
+
+export const fileSize = bytes => {
+  if (!bytes) return '';
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+};
+
+export const initials = name =>
+  (name || '')
+    .split(/\s+/)
+    .filter(word => /^\p{L}/u.test(word))
+    .slice(0, 2)
+    .map(word => word[0].toUpperCase())
+    .join('');
