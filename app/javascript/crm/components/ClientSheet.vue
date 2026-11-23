@@ -93,6 +93,13 @@ const toggleLabel = label => {
         </button>
       </form>
 
+      <div v-if="header.phone_number" class="mb-5">
+        <span class="mb-1 block text-xs text-muted">{{
+          t('profile.phone')
+        }}</span>
+        <p class="select-all font-medium">{{ header.phone_number }}</p>
+      </div>
+
       <h3 class="mb-2 text-sm font-medium text-accent-ink">
         {{ t('menu.status') }}
       </h3>

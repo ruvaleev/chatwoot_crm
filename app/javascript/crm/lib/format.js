@@ -85,3 +85,15 @@ export const initials = name =>
     .slice(0, 2)
     .map(word => word[0].toUpperCase())
     .join('');
+
+const TEMPLATE_SUGGESTIONS = 8;
+
+// Templates typed as "/query": matched by short code or text.
+export const matchTemplates = (templates, query) =>
+  templates
+    .filter(template =>
+      `${template.short_code} ${template.content}`
+        .toLowerCase()
+        .includes(query.toLowerCase())
+    )
+    .slice(0, TEMPLATE_SUGGESTIONS);

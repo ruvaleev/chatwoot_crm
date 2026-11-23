@@ -1,25 +1,40 @@
 # Compact chat list and chat header for the new interface (crm/PRD.md, stage D): one request per screen instead of
 # the full Chatwoot conversation payloads. Visibility is Chatwoot's permission filter plus our freelancer rule.
 class Custom::Api::V1::Accounts::Crm::ChatsController < Api::V1::Accounts::BaseController
-  FILTERS = %w[all waiting hidden].freeze
+  FILTERS = %w[all waiting new mine hidden].freeze
+  # Like a messenger by default; "waiting" puts the longest wait first.
+  SORTS = %w[recent waiting].freeze
   PER_PAGE = 50
 
-  before_action :validate_filter, only: :index
+  before_action :validate_list_params, only: :index
   before_action :fetch_chat, except: :index
   before_action :validate_update, only: :update
+  before_action :ensure_manager, :fetch_handoff_target, only: :handoff
 
+  # Only client chats: Evolution's service chat (QR codes, connection statuses) belongs to the numbers screen.
   def index
-    hidden = visible_chats.where(id: hidden_ids)
-    shown = visible_chats.where.not(id: hidden_ids)
-    @waiting_count = shown.crm_waiting.count
-    @hidden_count = hidden.count
-    @chats = filtered(hidden, shown).includes(:contact, :inbox, :assignee).page(params[:page]).per(PER_PAGE)
+    clients = visible_chats.crm_client_chats
+    hidden = narrowed(clients.where(id: hidden_ids))
+    shown = narrowed(clients.where.not(id: hidden_ids))
+    @counts = tab_counts(shown).merge(hidden: hidden.count)
+    @inboxes = Current.user.assigned_inboxes.order(:name)
+    @chats = filtered(hidden, shown).includes(:contact, :assignee, inbox: :members).page(params[:page]).per(PER_PAGE)
   end
 
   def show; end
 
   def update
     @chat.update!(custom_attributes: @chat.custom_attributes.merge(update_attributes))
+    render :show
+  end
+
+  # The manager's brief is saved as a private note and pinned in the chat; the conversation goes to the freelancer.
+  def handoff
+    ActiveRecord::Base.transaction do
+      brief = Messages::MessageBuilder.new(Current.user, @chat, { content: params.require(:brief), private: true }).perform
+      @chat.update!(assignee: @handoff_target,
+                    custom_attributes: @chat.custom_attributes.merge('crm_status' => 'handed_off', 'crm_brief_message_id' => brief.id))
+    end
     render :show
   end
 
@@ -43,20 +58,51 @@ class Custom::Api::V1::Accounts::Crm::ChatsController < Api::V1::Accounts::BaseC
     Current.user.crm_hidden_conversations.select(:conversation_id)
   end
 
+  def tab_counts(shown)
+    { waiting: shown.crm_waiting.count, new: shown.where(assignee_id: nil).count, mine: shown.where(assignee_id: Current.user.id).count }
+  end
+
+  # Number, status and search apply to every tab and to the counters.
+  def narrowed(chats)
+    chats = chats.where(inbox_id: params[:inbox_id]) if params[:inbox_id].present?
+    chats = chats.crm_with_status(params[:status]) if params[:status].present?
+    params[:q].present? ? searched(chats, params[:q].strip) : chats
+  end
+
+  # Freelancers can't look a client up by phone: that would confirm a number they are not shown.
+  def searched(chats, query)
+    freelancer = Current.user.crm_freelancer?
+    return chats.none if freelancer && Custom::PhoneScrubber.phone_like?(query)
+
+    chats.crm_matching(query, phone: !freelancer)
+  end
+
   def filtered(hidden, shown)
-    case params.fetch(:filter, 'all')
-    when 'hidden' then hidden.order(last_activity_at: :desc)
-    when 'waiting' then shown.crm_waiting.order(waiting_since: :asc)
-    else shown.order(last_activity_at: :desc)
-    end
+    chats = case params.fetch(:filter, 'all')
+            when 'hidden' then hidden
+            when 'waiting' then shown.crm_waiting
+            when 'new' then shown.where(assignee_id: nil)
+            when 'mine' then shown.where(assignee_id: Current.user.id)
+            else shown
+            end
+    chats.order(sort_order)
+  end
+
+  def sort_order
+    recent = Conversation.arel_table[:last_activity_at].desc
+    params.fetch(:sort, 'recent') == 'waiting' ? [Conversation.arel_table[:waiting_since].asc.nulls_last, recent] : recent
   end
 
   def fetch_chat
     @chat = visible_chats.find_by!(display_id: params[:id])
   end
 
-  def validate_filter
-    render_could_not_create_error("Unknown filter: #{params[:filter]}") unless FILTERS.include?(params.fetch(:filter, 'all'))
+  def validate_list_params
+    return render_could_not_create_error("Unknown filter: #{params[:filter]}") unless FILTERS.include?(params.fetch(:filter, 'all'))
+    return render_could_not_create_error("Unknown sort: #{params[:sort]}") unless SORTS.include?(params.fetch(:sort, 'recent'))
+    return if params[:status].blank? || Conversation::CRM_STATUSES.include?(params[:status])
+
+    render_could_not_create_error("Unknown status: #{params[:status]}")
   end
 
   def validate_update
@@ -64,6 +110,16 @@ class Custom::Api::V1::Accounts::Crm::ChatsController < Api::V1::Accounts::BaseC
     return if status.nil? || allowed_statuses.include?(status)
 
     render_could_not_create_error("Status not allowed: #{status}")
+  end
+
+  def ensure_manager
+    head :forbidden if Current.user.crm_freelancer?
+  end
+
+  # By default the freelancer the number is assigned to; otherwise someone with access to the number's inbox.
+  def fetch_handoff_target
+    @handoff_target = params[:assignee_id].present? ? @chat.inbox.members.find_by(id: params[:assignee_id]) : @chat.inbox.crm_freelancer
+    render_could_not_create_error('No freelancer for this number') if @handoff_target.nil?
   end
 
   def allowed_statuses

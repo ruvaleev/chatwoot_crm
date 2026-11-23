@@ -1,9 +1,9 @@
 <script setup>
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import BottomSheet from './BottomSheet.vue';
 import { t } from '../lib/i18n';
-import { sendMessage, toast } from '../lib/store';
-import { fileSize, voiceFileName } from '../lib/format';
+import { fetchTemplates, sendMessage, toast } from '../lib/store';
+import { fileSize, matchTemplates, voiceFileName } from '../lib/format';
 
 const text = ref('');
 const isNote = ref(false);
@@ -19,6 +19,24 @@ let chunks = [];
 let timer = null;
 
 const canSend = computed(() => text.value.trim().length > 0);
+const templates = ref(null);
+const templateQuery = computed(() =>
+  text.value.startsWith('/') ? text.value.slice(1) : null
+);
+const suggestions = computed(() =>
+  templateQuery.value === null
+    ? []
+    : matchTemplates(templates.value || [], templateQuery.value)
+);
+
+watch(templateQuery, async query => {
+  if (query === null || templates.value) return;
+  templates.value = await fetchTemplates().catch(() => []);
+});
+
+const useTemplate = template => {
+  text.value = template.content;
+};
 const timerLabel = computed(
   () =>
     `${Math.floor(seconds.value / 60)}:${String(seconds.value % 60).padStart(2, '0')}`
@@ -31,10 +49,13 @@ const sendText = () => {
 };
 
 const onKeydown = event => {
-  if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
-    event.preventDefault();
-    sendText();
+  if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
+  event.preventDefault();
+  if (templateQuery.value !== null && suggestions.value.length) {
+    useTemplate(suggestions.value[0]);
+    return;
   }
+  sendText();
 };
 
 const pick = input => {
@@ -164,6 +185,28 @@ onBeforeUnmount(() => {
         class="relative flex min-h-11 flex-1 items-end rounded-3xl px-1"
         :class="isNote ? 'bg-note' : 'bg-panel'"
       >
+        <ul
+          v-if="templateQuery !== null && templates"
+          class="absolute inset-x-0 bottom-12 z-30 max-h-64 overflow-y-auto rounded-xl bg-panel py-1 shadow-pop"
+        >
+          <li v-if="!suggestions.length" class="px-4 py-2.5 text-sm text-muted">
+            {{ t('templates.empty') }}
+          </li>
+          <li v-for="template in suggestions" :key="template.id">
+            <button
+              type="button"
+              class="block w-full px-4 py-2 text-start hover:bg-hover"
+              @click="useTemplate(template)"
+            >
+              <span class="block text-xs font-medium text-accent-ink">
+                /{{ template.short_code }}
+              </span>
+              <span class="block truncate text-sm">
+                {{ template.content }}
+              </span>
+            </button>
+          </li>
+        </ul>
         <button
           type="button"
           class="grid size-10 shrink-0 place-items-center rounded-full text-muted hover:bg-hover"

@@ -16,6 +16,7 @@ import {
 const props = defineProps({
   chat: { type: Object, required: true },
   active: { type: Boolean, default: false },
+  manager: { type: Boolean, default: false },
 });
 const emit = defineEmits(['open', 'menu']);
 
@@ -90,7 +91,7 @@ const open = () => {
       </div>
       <div class="mt-1 flex flex-wrap items-center gap-1.5">
         <span
-          v-if="chat.status === 'handed_off'"
+          v-if="!manager && chat.status === 'handed_off'"
           class="rounded-md bg-accent-soft px-1.5 text-xs leading-5 text-accent-ink"
         >
           {{ t('row.fresh') }}
@@ -102,7 +103,19 @@ const open = () => {
           <span class="i-lucide-clock size-3" />
           {{ waitingLabel(waitingMinutes(chat.waiting_since, now)) }}
         </span>
-        <StatusTag v-if="chat.status !== 'handed_off'" :status="chat.status" />
+        <span
+          v-if="manager"
+          class="rounded-md bg-chip px-1.5 text-xs leading-5 text-muted"
+        >
+          {{ chat.inbox.name }}
+        </span>
+        <StatusTag
+          v-if="manager || chat.status !== 'handed_off'"
+          :status="chat.status"
+        />
+        <span v-if="manager" class="truncate text-xs text-faint">
+          {{ chat.assignee?.name || t('row.unassigned') }}
+        </span>
         <span
           v-for="label in chat.contact.labels"
           :key="label"

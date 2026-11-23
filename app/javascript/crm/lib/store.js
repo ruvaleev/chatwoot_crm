@@ -1,6 +1,6 @@
 // App state in plain reactive objects (no store library: crm/PRD.md, AC D.8). Every server call made here is one
 // the open screen needs; afterwards the screen is kept fresh by WebSocket events only.
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { accountApi, profileApi, setUnauthorizedHandler } from './api';
 import { connectCable } from './cable';
 import { readSession } from './session';
@@ -24,9 +24,13 @@ export const state = reactive({
   uiSettings: {},
   list: {
     filter: 'all',
+    inboxId: null,
+    status: null,
+    sort: 'recent',
+    query: '',
     items: [],
-    waitingCount: 0,
-    hiddenCount: 0,
+    counts: { waiting: 0, new: 0, mine: 0, hidden: 0 },
+    inboxes: [],
     page: 1,
     hasMore: false,
     loading: false,
@@ -41,6 +45,9 @@ export const state = reactive({
   toast: null,
 });
 export const now = ref(Date.now());
+export const isManager = computed(
+  () => state.user?.custom_attributes?.crm_freelancer !== true
+);
 
 let api = null;
 let router = null;
@@ -48,6 +55,8 @@ let disconnect = null;
 let refreshTimer = null;
 let toastTimer = null;
 let clockTimer = null;
+let listRequest = 0;
+let templates = null;
 
 export const toast = key => {
   // eslint-disable-next-line @intlify/vue-i18n/no-dynamic-keys -- our own t(), keys are in locales/
@@ -68,22 +77,42 @@ export const isSignedIn = () => Boolean(readSession());
 
 // ---------- chat list ----------
 
-export const loadList = async (filter = state.list.filter) => {
+const listQuery = (page = 1) => {
   const { list } = state;
-  list.filter = filter;
+  return {
+    filter: list.filter,
+    sort: list.sort,
+    inbox_id: list.inboxId,
+    status: list.status,
+    q: list.query.trim() || null,
+    page,
+  };
+};
+
+// Every list request carries the current tab and filters; a slower, older answer is dropped.
+export const loadList = async (changes = {}) => {
+  const { list } = state;
+  Object.assign(list, changes);
+  listRequest += 1;
+  const request = listRequest;
   list.loading = true;
   try {
-    const data = await api.chats({ filter });
-    if (list.filter !== filter) return;
+    const data = await api.chats(listQuery());
+    if (request !== listRequest) return;
     Object.assign(list, {
       items: data.payload,
-      waitingCount: data.meta.waiting_count,
-      hiddenCount: data.meta.hidden_count,
+      counts: {
+        waiting: data.meta.waiting_count,
+        new: data.meta.new_count,
+        mine: data.meta.mine_count,
+        hidden: data.meta.hidden_count,
+      },
+      inboxes: data.meta.inboxes,
       page: 1,
       hasMore: data.meta.has_more,
     });
   } finally {
-    list.loading = false;
+    if (request === listRequest) list.loading = false;
   }
 };
 
@@ -92,7 +121,7 @@ export const loadMore = async () => {
   if (!list.hasMore || list.loading) return;
   list.loading = true;
   try {
-    const data = await api.chats({ filter: list.filter, page: list.page + 1 });
+    const data = await api.chats(listQuery(list.page + 1));
     list.items.push(
       ...data.payload.filter(
         row => !list.items.some(item => item.id === row.id)
@@ -107,7 +136,7 @@ export const loadMore = async () => {
 
 const scheduleListRefresh = () => {
   clearTimeout(refreshTimer);
-  refreshTimer = setTimeout(() => loadList(state.list.filter), REFRESH_DELAY);
+  refreshTimer = setTimeout(() => loadList(), REFRESH_DELAY);
 };
 
 const patchRow = (id, changes) => {
@@ -246,13 +275,26 @@ export const setHidden = async (id, hidden) => {
   await (hidden ? api.hide(id) : api.unhide(id));
   updateHeader({ hidden });
   toast(hidden ? 'toast.hidden' : 'toast.unhidden');
-  loadList(state.list.filter);
+  loadList();
 };
 
 export const updateDeal = async (id, changes) => {
   const header = await api.updateChat(id, changes);
   updateHeader(header);
   patchRow(id, { status: header.status });
+};
+
+export const handoff = async brief => {
+  const id = state.chat.id;
+  const header = await api.handoff(id, { brief });
+  if (state.chat.id === id) updateHeader(header);
+  patchRow(id, { status: header.status, assignee: header.assignee });
+};
+
+// Team templates, loaded once on the first "/" typed in the composer.
+export const fetchTemplates = async () => {
+  templates ??= await api.templates();
+  return templates;
 };
 
 export const fetchLabels = async () =>
@@ -333,6 +375,7 @@ export const boot = async appRouter => {
   state.user = profile;
   state.accountId = profile.account_id || profile.accounts[0].id;
   state.uiSettings = profile.ui_settings || {};
+  state.list.sort = state.uiSettings.crm_sort || 'recent';
   setLocale(
     state.uiSettings.crm_locale ||
       (navigator.language.startsWith('ru') ? 'ru' : 'en')
@@ -345,7 +388,7 @@ export const boot = async appRouter => {
     userId: profile.id,
     onEvent: handleEvent,
     onReconnect: () => {
-      loadList(state.list.filter);
+      loadList();
       if (state.chat.id) openChat(state.chat.id);
     },
   });
@@ -353,4 +396,9 @@ export const boot = async appRouter => {
     now.value = Date.now();
   }, 30000);
   state.ready = true;
+};
+
+export const setSort = async sort => {
+  await loadList({ sort });
+  await saveSettings({ crm_sort: sort });
 };

@@ -8,6 +8,7 @@ end
 json.inbox do
   json.id chat.inbox_id
   json.name chat.inbox.name
+  json.freelancer chat.inbox.crm_freelancer&.slice(:id, :name)
 end
 json.assignee chat.assignee&.slice(:id, :name)
 json.status chat.crm_status

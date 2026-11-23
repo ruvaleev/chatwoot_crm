@@ -7,6 +7,7 @@ Rails.application.routes.append do
     resources :chats, only: [:index, :show, :update] do
       member do
         post :hide
+        post :handoff
         delete :hide, action: :unhide
       end
     end

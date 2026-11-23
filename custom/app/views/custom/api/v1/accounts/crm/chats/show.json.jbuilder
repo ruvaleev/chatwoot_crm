@@ -1,4 +1,6 @@
 json.partial! 'custom/api/v1/accounts/crm/chats/chat', chat: @chat
+# Scrubbed for freelancers like every phone in their responses.
+json.phone_number @chat.contact.phone_number
 json.hidden Current.user.crm_hidden_conversations.exists?(conversation: @chat)
 json.deal @chat.crm_deal
 json.brief do

@@ -4,8 +4,14 @@ import { useRouter } from 'vue-router';
 import ChatRow from './ChatRow.vue';
 import BottomSheet from './BottomSheet.vue';
 import { t } from '../lib/i18n';
-import { loadList, loadMore, setHidden, state } from '../lib/store';
-import { previewText } from '../lib/format';
+import {
+  isManager,
+  loadList,
+  loadMore,
+  setHidden,
+  setSort,
+  state,
+} from '../lib/store';
 
 const props = defineProps({
   hiddenView: { type: Boolean, default: false },
@@ -13,50 +19,56 @@ const props = defineProps({
 });
 const router = useRouter();
 
+const SEARCH_DELAY = 300;
+const SORTS = ['recent', 'waiting'];
+const STATUSES = [
+  'new',
+  'qualifying',
+  'handed_off',
+  'in_work',
+  'won',
+  'lost',
+  'spam',
+];
+const EMPTY = {
+  hidden: ['i-lucide-archive', 'list.empty_hidden', 'list.empty_hidden_text'],
+  waiting: ['i-lucide-check', 'list.empty_waiting', 'list.empty_waiting_text'],
+  new: ['i-lucide-inbox', 'list.empty_new', 'list.empty_new_text'],
+  mine: ['i-lucide-user', 'list.empty_mine', 'list.empty_mine_text'],
+  all: ['i-lucide-message-circle', 'list.empty_all', 'list.empty_all_text'],
+};
+
 const tab = ref('waiting');
-const query = ref('');
+const search = ref(state.list.query);
 const menuOpen = ref(false);
+const filterOpen = ref(false);
 const rowMenu = ref(null);
 const sentinel = ref(null);
 let observer = null;
+let searchTimer = null;
 
-const filter = computed(() => (props.hiddenView ? 'hidden' : tab.value));
 const list = computed(() => state.list);
-const rows = computed(() => {
-  const needle = query.value.trim().toLowerCase();
-  if (!needle) return list.value.items;
-  return list.value.items.filter(chat =>
-    `${chat.contact.name} ${previewText(chat.last_message)}`
-      .toLowerCase()
-      .includes(needle)
-  );
-});
+const tabs = computed(() =>
+  isManager.value ? ['waiting', 'new', 'mine', 'all'] : ['waiting', 'all']
+);
+const filter = computed(() => (props.hiddenView ? 'hidden' : tab.value));
 const firstLoad = computed(
   () => list.value.loading && !list.value.items.length
 );
+const activeInbox = computed(() =>
+  list.value.inboxes.find(inbox => inbox.id === list.value.inboxId)
+);
 const empty = computed(() => {
-  if (query.value.trim())
-    return { icon: 'i-lucide-search', title: t('list.empty_search'), text: '' };
-  if (filter.value === 'hidden')
-    return {
-      icon: 'i-lucide-archive',
-      title: t('list.empty_hidden'),
-      text: t('list.empty_hidden_text'),
-    };
-  if (filter.value === 'waiting')
-    return {
-      icon: 'i-lucide-check',
-      title: t('list.empty_waiting'),
-      text: t('list.empty_waiting_text'),
-    };
-  return {
-    icon: 'i-lucide-message-circle',
-    title: t('list.empty_all'),
-    text: t('list.empty_all_text'),
-  };
+  if (list.value.query.trim())
+    return ['i-lucide-search', 'list.empty_search', ''];
+  return EMPTY[filter.value];
 });
 
-watch(filter, value => loadList(value), { immediate: true });
+watch(filter, value => loadList({ filter: value }), { immediate: true });
+watch(search, value => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => loadList({ query: value }), SEARCH_DELAY);
+});
 
 onMounted(() => {
   observer = new IntersectionObserver(entries => {
@@ -64,7 +76,10 @@ onMounted(() => {
   });
   if (sentinel.value) observer.observe(sentinel.value);
 });
-onBeforeUnmount(() => observer?.disconnect());
+onBeforeUnmount(() => {
+  observer?.disconnect();
+  clearTimeout(searchTimer);
+});
 
 const openChat = chat => router.push({ name: 'chat', params: { id: chat.id } });
 const go = name => {
@@ -75,6 +90,8 @@ const toggleHidden = async chat => {
   rowMenu.value = null;
   await setHidden(chat.id, !props.hiddenView);
 };
+const setFilter = changes => loadList(changes);
+const count = name => list.value.counts[name] || 0;
 </script>
 
 <template>
@@ -93,6 +110,14 @@ const toggleHidden = async chat => {
       </template>
       <template v-else>
         <h1 class="flex-1 px-1 text-xl font-semibold">{{ t('nav.chats') }}</h1>
+        <button
+          type="button"
+          class="grid size-10 place-items-center rounded-full text-muted hover:bg-hover"
+          :aria-label="t('filter.open')"
+          @click="filterOpen = true"
+        >
+          <span class="i-lucide-sliders-horizontal size-5" />
+        </button>
         <div class="relative">
           <button
             type="button"
@@ -111,25 +136,22 @@ const toggleHidden = async chat => {
           <div
             v-if="menuOpen"
             class="absolute end-0 top-11 z-30 w-56 overflow-hidden rounded-xl bg-panel py-1 shadow-pop"
-            @click.stop
           >
             <button
               type="button"
               class="flex w-full items-center gap-3 px-4 py-2.5 text-start hover:bg-hover"
               @click="go('hidden')"
             >
-              <span class="i-lucide-archive size-5 text-muted" />{{
-                t('nav.hidden')
-              }}
+              <span class="i-lucide-archive size-5 text-muted" />
+              {{ t('nav.hidden') }}
             </button>
             <button
               type="button"
               class="flex w-full items-center gap-3 px-4 py-2.5 text-start hover:bg-hover"
               @click="go('settings')"
             >
-              <span class="i-lucide-settings size-5 text-muted" />{{
-                t('nav.settings')
-              }}
+              <span class="i-lucide-settings size-5 text-muted" />
+              {{ t('nav.settings') }}
             </button>
           </div>
         </div>
@@ -139,33 +161,50 @@ const toggleHidden = async chat => {
     <label class="mx-3 mb-2 flex items-center gap-3 rounded-lg bg-chip px-3">
       <span class="i-lucide-search size-4 text-faint" />
       <input
-        v-model="query"
+        v-model="search"
         type="search"
         class="h-9 w-full bg-transparent text-sm outline-none placeholder:text-faint"
-        :placeholder="t('search.placeholder')"
+        :placeholder="
+          isManager ? t('search.placeholder_manager') : t('search.placeholder')
+        "
         :aria-label="t('search.placeholder')"
       />
     </label>
 
-    <div v-if="!hiddenView" class="flex gap-2 px-3 pb-2">
+    <div v-if="!hiddenView" class="flex flex-wrap gap-2 px-3 pb-2">
       <button
-        v-for="name in ['waiting', 'all']"
+        v-for="name in tabs"
         :key="name"
         type="button"
-        :aria-pressed="tab === name"
         class="h-8 rounded-full px-3 text-sm"
         :class="
           tab === name ? 'bg-accent-soft text-accent-ink' : 'bg-chip text-muted'
         "
+        :aria-pressed="tab === name"
         @click="tab = name"
       >
         {{ t(`tab.${name}`) }}
-        <span
-          v-if="name === 'waiting' && list.waitingCount"
-          class="ms-1 font-semibold"
-        >
-          {{ list.waitingCount }}
+        <span v-if="name !== 'all' && count(name)" class="ms-1 font-semibold">
+          {{ count(name) }}
         </span>
+      </button>
+      <button
+        v-if="activeInbox"
+        type="button"
+        class="flex h-8 items-center gap-1 rounded-full bg-accent text-sm text-on-accent ps-3 pe-2"
+        @click="setFilter({ inboxId: null })"
+      >
+        {{ activeInbox.name }}
+        <span class="i-lucide-x size-4" />
+      </button>
+      <button
+        v-if="list.status"
+        type="button"
+        class="flex h-8 items-center gap-1 rounded-full bg-accent text-sm text-on-accent ps-3 pe-2"
+        @click="setFilter({ status: null })"
+      >
+        {{ t(`status.${list.status}`) }}
+        <span class="i-lucide-x size-4" />
       </button>
     </div>
 
@@ -174,14 +213,14 @@ const toggleHidden = async chat => {
         {{ t('list.hidden_hint') }}
       </p>
       <button
-        v-else-if="list.hiddenCount"
+        v-else-if="list.counts.hidden"
         type="button"
         class="flex w-full items-center gap-6 px-6 py-3 text-start hover:bg-hover"
         @click="go('hidden')"
       >
         <span class="i-lucide-archive size-5 text-muted" />
         <span class="flex-1 font-medium">{{ t('list.hidden_row') }}</span>
-        <span class="text-sm text-accent">{{ list.hiddenCount }}</span>
+        <span class="text-sm text-accent">{{ list.counts.hidden }}</span>
       </button>
 
       <div v-if="firstLoad" aria-busy="true">
@@ -193,22 +232,21 @@ const toggleHidden = async chat => {
           </div>
         </div>
       </div>
-      <template v-else-if="rows.length">
+      <template v-else-if="list.items.length">
         <ChatRow
-          v-for="chat in rows"
+          v-for="chat in list.items"
           :key="chat.id"
           :chat="chat"
           :active="chat.id === activeId"
+          :manager="isManager"
           @open="openChat"
           @menu="rowMenu = $event"
         />
       </template>
       <div v-else class="flex flex-col items-center px-8 py-16 text-center">
-        <span class="mb-3 size-10 text-faint" :class="empty.icon" />
-        <p class="font-medium">{{ empty.title }}</p>
-        <p v-if="empty.text" class="mt-1 text-sm text-muted">
-          {{ empty.text }}
-        </p>
+        <span class="mb-3 size-10 text-faint" :class="empty[0]" />
+        <p class="font-medium">{{ t(empty[1]) }}</p>
+        <p v-if="empty[2]" class="mt-1 text-sm text-muted">{{ t(empty[2]) }}</p>
       </div>
       <div ref="sentinel" class="h-px" />
     </div>
@@ -228,6 +266,98 @@ const toggleHidden = async chat => {
           :class="hiddenView ? 'i-lucide-archive-restore' : 'i-lucide-archive'"
         />
         {{ hiddenView ? t('menu.unhide') : t('menu.hide') }}
+      </button>
+    </BottomSheet>
+
+    <BottomSheet
+      v-if="filterOpen"
+      :title="t('filter.open')"
+      @close="filterOpen = false"
+    >
+      <h3 class="mb-2 text-sm font-medium text-accent-ink">
+        {{ t('sort.title') }}
+      </h3>
+      <div class="mb-5 flex flex-wrap gap-2">
+        <button
+          v-for="sort in SORTS"
+          :key="sort"
+          type="button"
+          class="h-8 rounded-full px-3 text-sm"
+          :class="
+            list.sort === sort
+              ? 'bg-accent text-on-accent'
+              : 'bg-chip text-muted'
+          "
+          :aria-pressed="list.sort === sort"
+          @click="setSort(sort)"
+        >
+          {{ t(`sort.${sort}`) }}
+        </button>
+      </div>
+      <h3 v-if="isManager" class="mb-2 text-sm font-medium text-accent-ink">
+        {{ t('filter.number') }}
+      </h3>
+      <div v-if="isManager" class="mb-5 flex flex-wrap gap-2">
+        <button
+          type="button"
+          class="h-8 rounded-full px-3 text-sm"
+          :class="
+            list.inboxId ? 'bg-chip text-muted' : 'bg-accent text-on-accent'
+          "
+          @click="setFilter({ inboxId: null })"
+        >
+          {{ t('filter.all_numbers') }}
+        </button>
+        <button
+          v-for="inbox in list.inboxes"
+          :key="inbox.id"
+          type="button"
+          class="h-8 rounded-full px-3 text-sm"
+          :class="
+            list.inboxId === inbox.id
+              ? 'bg-accent text-on-accent'
+              : 'bg-chip text-muted'
+          "
+          @click="setFilter({ inboxId: inbox.id })"
+        >
+          {{ inbox.name }}
+        </button>
+      </div>
+      <h3 class="mb-2 text-sm font-medium text-accent-ink">
+        {{ t('filter.status') }}
+      </h3>
+      <div class="mb-5 flex flex-wrap gap-2">
+        <button
+          type="button"
+          class="h-8 rounded-full px-3 text-sm"
+          :class="
+            list.status ? 'bg-chip text-muted' : 'bg-accent text-on-accent'
+          "
+          @click="setFilter({ status: null })"
+        >
+          {{ t('filter.all_statuses') }}
+        </button>
+        <button
+          v-for="status in STATUSES"
+          :key="status"
+          type="button"
+          class="h-8 rounded-full px-3 text-sm"
+          :class="
+            list.status === status
+              ? 'bg-accent text-on-accent'
+              : 'bg-chip text-muted'
+          "
+          @click="setFilter({ status })"
+        >
+          {{ t(`status.${status}`) }}
+        </button>
+      </div>
+      <button
+        type="button"
+        class="h-10 w-full rounded-lg bg-chip text-sm text-muted"
+        @click="setFilter({ inboxId: null, status: null })"
+      >
+        {{ t('filter.clear') }}
       </button>
     </BottomSheet>
   </section>

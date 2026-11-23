@@ -5,8 +5,10 @@ import ChatAvatar from './ChatAvatar.vue';
 import MessageBubble from './MessageBubble.vue';
 import MessageComposer from './MessageComposer.vue';
 import ClientSheet from './ClientSheet.vue';
+import HandoffSheet from './HandoffSheet.vue';
 import { t } from '../lib/i18n';
 import {
+  isManager,
   loadOlder,
   openChat,
   retryMessage,
@@ -25,6 +27,16 @@ const briefOpen = ref(false);
 
 const chat = computed(() => state.chat);
 const header = computed(() => chat.value.header);
+// The manager writes from a freelancer's number, so the header says on whose behalf.
+const subtitle = computed(() => {
+  const status = t(`status.${header.value.status}`);
+  const { inbox } = header.value;
+  if (!isManager.value) return status;
+  const via = inbox.freelancer
+    ? t('chat.writing_as', { number: inbox.name, name: inbox.freelancer.name })
+    : inbox.name;
+  return `${via} · ${status}`;
+});
 const messages = computed(() =>
   chat.value.messages.filter(
     message => message.message_type !== MESSAGE_TYPE.activity || message.content
@@ -104,9 +116,9 @@ const showDay = index =>
           <span class="block truncate font-medium">{{
             header.contact.name
           }}</span>
-          <span class="block truncate text-xs text-muted">{{
-            t(`status.${header.status}`)
-          }}</span>
+          <span class="block truncate text-xs text-muted">
+            {{ subtitle }}
+          </span>
         </span>
       </button>
       <div v-else class="flex-1" />
@@ -137,6 +149,15 @@ const showDay = index =>
             <span class="i-lucide-user size-5 text-muted" />{{
               t('menu.profile')
             }}
+          </button>
+          <button
+            v-if="isManager"
+            type="button"
+            class="flex w-full items-center gap-3 px-4 py-2.5 text-start hover:bg-hover"
+            @click="openSheet('handoff')"
+          >
+            <span class="i-lucide-user-round-check size-5 text-muted" />
+            {{ t('menu.handoff') }}
           </button>
           <button
             type="button"
@@ -239,8 +260,9 @@ const showDay = index =>
     </div>
 
     <MessageComposer v-if="header" />
+    <HandoffSheet v-if="sheet === 'handoff' && header" @close="sheet = null" />
     <ClientSheet
-      v-if="sheet && header"
+      v-else-if="sheet && header"
       :section="sheet"
       @close="sheet = null"
     />

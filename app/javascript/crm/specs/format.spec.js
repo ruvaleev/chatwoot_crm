@@ -3,6 +3,7 @@ import {
   initials,
   isOverdue,
   listTime,
+  matchTemplates,
   previewText,
   voiceFileName,
   waitingLabel,
@@ -68,5 +69,18 @@ describe('previews and files', () => {
     expect(initials('Анна Ветрова')).toBe('АВ');
     expect(initials('Client •••49')).toBe('C');
     expect(initials('')).toBe('');
+  });
+});
+
+describe('templates', () => {
+  const templates = [
+    { id: 1, short_code: 'hello', content: 'Hi! How can I help?' },
+    { id: 2, short_code: 'price', content: 'Prices start at 100' },
+  ];
+
+  it('matches the short code or the text, case-insensitively', () => {
+    expect(matchTemplates(templates, 'HEL').map(t => t.id)).toEqual([1]);
+    expect(matchTemplates(templates, 'start').map(t => t.id)).toEqual([2]);
+    expect(matchTemplates(templates, '').map(t => t.id)).toEqual([1, 2]);
   });
 });

@@ -63,6 +63,9 @@ export const accountApi = accountId => {
     updateChat: (id, body) =>
       request(`${base}/crm/chats/${id}`, { method: 'PATCH', body }),
     hide: id => request(`${base}/crm/chats/${id}/hide`, { method: 'POST' }),
+    handoff: (id, body) =>
+      request(`${base}/crm/chats/${id}/handoff`, { method: 'POST', body }),
+    templates: () => request(`${base}/canned_responses`),
     unhide: id => request(`${base}/crm/chats/${id}/hide`, { method: 'DELETE' }),
     messages: (id, before) =>
       request(`${base}/conversations/${id}/messages`, { query: { before } }),
