@@ -2,7 +2,7 @@
 // Size budget of the new interface (crm/PRD.md, AC D.8): what the CRM entry loads at start, gzipped, from the
 // production Vite manifest. Lazy chunks (dynamic imports) are not counted. Exits 1 over budget.
 // Usage: bin/vite build && node script/crm/bundle-budget.mjs [manifest]
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { pathToFileURL } from 'node:url';
@@ -33,9 +33,30 @@ const gzipped = (root, files) =>
     0
   );
 
+// The whole production build, for the before/after record of stage L3 (crm/PROGRESS.md).
+const allFiles = dir =>
+  readdirSync(dir, { withFileTypes: true }).flatMap(item =>
+    item.isDirectory() ? allFiles(join(dir, item.name)) : [join(dir, item.name)]
+  );
+
+const reportBuild = root => {
+  const files = allFiles(root);
+  const code = files.filter(file => /\.(js|css)$/.test(file));
+  const megabytes = bytes => (bytes / 1024 / 1024).toFixed(1);
+  const raw = files.reduce((sum, file) => sum + statSync(file).size, 0);
+  const gzip = code.reduce(
+    (sum, file) => sum + gzipSync(readFileSync(file)).length,
+    0
+  );
+  console.log(
+    `All assets: ${files.length} files, ${megabytes(raw)} MB; JS and CSS: ${code.length} files, ${megabytes(gzip)} MB gzip`
+  );
+};
+
 const main = manifestPath => {
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
   const root = dirname(dirname(manifestPath));
+  reportBuild(root);
   const files = startFiles(manifest);
   const size = { js: gzipped(root, files.js), css: gzipped(root, files.css) };
   const over = Object.keys(BUDGET).filter(kind => size[kind] > BUDGET[kind]);
