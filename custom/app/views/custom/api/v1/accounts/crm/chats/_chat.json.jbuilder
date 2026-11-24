@@ -8,9 +8,10 @@ end
 json.inbox do
   json.id chat.inbox_id
   json.name chat.inbox.name
-  json.freelancer chat.inbox.crm_freelancer&.slice(:id, :name)
+  freelancer = chat.inbox.crm_freelancer
+  json.freelancer freelancer && { id: freelancer.id, name: freelancer.name, schedule: freelancer.crm_schedule }
 end
-json.assignee chat.assignee&.slice(:id, :name)
+json.assignee chat.assignee && { id: chat.assignee.id, name: chat.assignee.name, schedule: chat.assignee.crm_schedule }
 json.status chat.crm_status
 json.waiting_since chat.waiting_since&.to_i
 json.last_activity_at chat.last_activity_at.to_i

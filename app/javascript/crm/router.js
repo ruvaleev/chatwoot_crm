@@ -29,6 +29,12 @@ const router = createRouter({
       meta: { manager: true },
     },
     {
+      path: '/team',
+      name: 'team',
+      component: ChatsLayout,
+      meta: { manager: true },
+    },
+    {
       path: '/invite/:token',
       name: 'invite',
       component: InviteView,

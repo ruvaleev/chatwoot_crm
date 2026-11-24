@@ -43,3 +43,6 @@ class Api::V1::Accounts::CannedResponsesController < Api::V1::Accounts::BaseCont
     end
   end
 end
+
+# CRM: extension point for custom/ (crm/docs/core-changes.md)
+Api::V1::Accounts::CannedResponsesController.prepend_mod_with('Api::V1::Accounts::CannedResponsesController')

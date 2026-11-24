@@ -1,13 +1,47 @@
 <script setup>
+import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import ChatAvatar from './ChatAvatar.vue';
+import TemplatesEditor from './TemplatesEditor.vue';
+import ScheduleEditor from './ScheduleEditor.vue';
 import { locale, t } from '../lib/i18n';
 import { signOut } from '../lib/api';
-import { reset, saveSettings, state } from '../lib/store';
+import {
+  deleteTemplate,
+  fetchTemplateGroups,
+  isManager,
+  reset,
+  saveSettings,
+  saveTemplate,
+  state,
+  toast,
+} from '../lib/store';
 
 const router = useRouter();
 const THEMES = ['system', 'light', 'dark'];
 const LANGUAGES = ['ru', 'en'];
+
+const myTemplates = ref([]);
+const busy = ref(false);
+const loadTemplates = async () => {
+  myTemplates.value = (await fetchTemplateGroups()).personal;
+};
+const changeTemplates = async action => {
+  busy.value = true;
+  try {
+    await action();
+    await loadTemplates();
+  } catch {
+    toast('error.generic');
+  } finally {
+    busy.value = false;
+  }
+};
+const saveMine = template =>
+  changeTemplates(() => saveTemplate(template, 'personal'));
+const deleteMine = template =>
+  changeTemplates(() => deleteTemplate(template, 'personal'));
+onMounted(loadTemplates);
 
 const logout = async () => {
   await signOut();
@@ -78,6 +112,27 @@ const logout = async () => {
         >
           {{ t(`theme.${theme}`) }}
         </button>
+      </div>
+
+      <template v-if="!isManager">
+        <h2 class="px-4 pb-2 pt-6 text-sm font-medium text-accent-ink">
+          {{ t('schedule.title') }}
+        </h2>
+        <div class="px-4">
+          <ScheduleEditor />
+        </div>
+      </template>
+
+      <h2 class="px-4 pb-2 pt-6 text-sm font-medium text-accent-ink">
+        {{ t('settings.my_templates') }}
+      </h2>
+      <div class="px-4">
+        <TemplatesEditor
+          :templates="myTemplates"
+          :busy="busy"
+          @save="saveMine"
+          @delete="deleteMine"
+        />
       </div>
 
       <button

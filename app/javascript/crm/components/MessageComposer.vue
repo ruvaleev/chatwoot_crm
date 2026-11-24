@@ -198,8 +198,13 @@ onBeforeUnmount(() => {
               class="block w-full px-4 py-2 text-start hover:bg-hover"
               @click="useTemplate(template)"
             >
-              <span class="block text-xs font-medium text-accent-ink">
-                /{{ template.short_code }}
+              <span class="flex items-center gap-2 text-xs">
+                <span class="font-medium text-accent-ink">
+                  /{{ template.short_code }}
+                </span>
+                <span class="text-faint">
+                  {{ t(`templates.kind.${template.kind}`) }}
+                </span>
               </span>
               <span class="block truncate text-sm">
                 {{ template.content }}

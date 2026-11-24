@@ -3,7 +3,8 @@ import { computed, ref } from 'vue';
 import BottomSheet from './BottomSheet.vue';
 import ChatAvatar from './ChatAvatar.vue';
 import { t } from '../lib/i18n';
-import { handoff, state, toast } from '../lib/store';
+import { handoff, now, state, toast } from '../lib/store';
+import { scheduleLabel } from '../lib/format';
 
 const emit = defineEmits(['close']);
 
@@ -43,6 +44,7 @@ const submit = async () => {
         <span class="block truncate font-medium">{{ freelancer.name }}</span>
         <span class="block truncate text-xs text-muted">
           {{ state.chat.header.inbox.name }}
+          · {{ scheduleLabel(freelancer.schedule, now) }}
         </span>
       </span>
     </div>

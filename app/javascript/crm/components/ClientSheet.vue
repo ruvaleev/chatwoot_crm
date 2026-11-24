@@ -134,6 +134,25 @@ const toggleLabel = label => {
             type="text"
             class="h-10 w-full rounded-lg border border-line bg-panel px-3 outline-none focus:border-accent"
           />
+          <span
+            v-if="field === 'lost_reason' && state.settings.lost_reasons.length"
+            class="mt-1.5 flex flex-wrap gap-1.5"
+          >
+            <button
+              v-for="reason in state.settings.lost_reasons"
+              :key="reason"
+              type="button"
+              class="h-7 rounded-full px-2.5 text-xs"
+              :class="
+                deal.lost_reason === reason
+                  ? 'bg-accent text-on-accent'
+                  : 'bg-chip text-muted'
+              "
+              @click="deal.lost_reason = reason"
+            >
+              {{ reason }}
+            </button>
+          </span>
         </label>
         <button
           type="submit"

@@ -10,12 +10,13 @@ import { t } from '../lib/i18n';
 import {
   isManager,
   loadOlder,
+  now,
   openChat,
   retryMessage,
   setHidden,
   state,
 } from '../lib/store';
-import { dayLabel, MESSAGE_TYPE, sameDay } from '../lib/format';
+import { dayLabel, MESSAGE_TYPE, sameDay, scheduleLabel } from '../lib/format';
 
 const props = defineProps({ id: { type: Number, required: true } });
 const router = useRouter();
@@ -32,10 +33,13 @@ const subtitle = computed(() => {
   const status = t(`status.${header.value.status}`);
   const { inbox } = header.value;
   if (!isManager.value) return status;
-  const via = inbox.freelancer
-    ? t('chat.writing_as', { number: inbox.name, name: inbox.freelancer.name })
-    : inbox.name;
-  return `${via} · ${status}`;
+  if (!inbox.freelancer) return `${inbox.name} · ${status}`;
+  const via = t('chat.writing_as', {
+    number: inbox.name,
+    name: inbox.freelancer.name,
+  });
+  // Whether the number's freelancer works today decides how to talk to a new client.
+  return `${via} · ${scheduleLabel(inbox.freelancer.schedule, now.value)} · ${status}`;
 });
 // Sent messages would not reach the client while the number is down.
 const numberDown = computed(

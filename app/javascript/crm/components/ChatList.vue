@@ -164,6 +164,15 @@ const count = name => list.value.counts[name] || 0;
               {{ t('nav.freelancers') }}
             </button>
             <button
+              v-if="isManager"
+              type="button"
+              class="flex w-full items-center gap-3 px-4 py-2.5 text-start hover:bg-hover"
+              @click="go('team')"
+            >
+              <span class="i-lucide-sliders-vertical size-5 text-muted" />
+              {{ t('nav.team') }}
+            </button>
+            <button
               type="button"
               class="flex w-full items-center gap-3 px-4 py-2.5 text-start hover:bg-hover"
               @click="go('settings')"

@@ -5,7 +5,7 @@ import { accountApi, profileApi, setUnauthorizedHandler } from './api';
 import { connectCable } from './cable';
 import { readSession } from './session';
 import { setLocale, t } from './i18n';
-import { MESSAGE_TYPE } from './format';
+import { DEFAULT_SETTINGS, MESSAGE_TYPE } from './format';
 
 const LIST_EVENTS = [
   'conversation.created',
@@ -22,6 +22,8 @@ export const state = reactive({
   user: null,
   accountId: null,
   uiSettings: {},
+  // Team settings (thresholds, working hours, refusal reasons), loaded once at start.
+  settings: { ...DEFAULT_SETTINGS },
   list: {
     filter: 'all',
     inboxId: null,
@@ -291,11 +293,49 @@ export const handoff = async brief => {
   patchRow(id, { status: header.status, assignee: header.assignee });
 };
 
-// Team templates, loaded once on the first "/" typed in the composer.
+// Team and own templates as one list, loaded on the first "/" typed in the composer.
 export const fetchTemplates = async () => {
-  templates ??= await api.templates();
+  if (!templates) {
+    const { team, personal } = await api.templates();
+    templates = [
+      ...personal.map(template => ({ ...template, kind: 'personal' })),
+      ...team.map(template => ({ ...template, kind: 'team' })),
+    ];
+  }
   return templates;
 };
+
+export const fetchTemplateGroups = () => api.templates();
+
+export const saveTemplate = async (template, kind) => {
+  templates = null;
+  return kind === 'team'
+    ? api.saveTeamTemplate(template)
+    : api.saveTemplate(template);
+};
+
+export const deleteTemplate = async (template, kind) => {
+  templates = null;
+  return kind === 'team'
+    ? api.deleteTeamTemplate(template.id)
+    : api.deleteTemplate(template.id);
+};
+
+export const saveSchedule = async schedule => {
+  const { schedule: saved } = await api.saveSchedule(schedule);
+  state.user.custom_attributes = {
+    ...state.user.custom_attributes,
+    crm_schedule: saved,
+  };
+};
+
+export const saveTeamSettings = async changes => {
+  state.settings = await api.saveSettings(changes);
+};
+
+export const fetchLabelRecords = async () => (await api.labels()).payload;
+export const createLabel = title => api.createLabel(title);
+export const deleteLabel = id => api.deleteLabel(id);
 
 export const fetchLabels = async () =>
   (await api.labels()).payload.map(label => label.title);
@@ -401,6 +441,7 @@ export const boot = async appRouter => {
   );
   applyTheme(state.uiSettings.crm_theme);
   api = accountApi(state.accountId);
+  state.settings = await api.settings();
   disconnect = connectCable({
     pubsubToken: profile.pubsub_token,
     accountId: state.accountId,

@@ -6,6 +6,7 @@ import ChatView from '../components/ChatView.vue';
 import SettingsPane from '../components/SettingsPane.vue';
 import NumbersPane from '../components/NumbersPane.vue';
 import FreelancersPane from '../components/FreelancersPane.vue';
+import TeamSettingsPane from '../components/TeamSettingsPane.vue';
 import { t } from '../lib/i18n';
 import { closeChat } from '../lib/store';
 
@@ -25,6 +26,7 @@ const chatId = computed(() =>
       <SettingsPane v-if="route.name === 'settings'" />
       <NumbersPane v-else-if="route.name === 'numbers'" />
       <FreelancersPane v-else-if="route.name === 'freelancers'" />
+      <TeamSettingsPane v-else-if="route.name === 'team'" />
       <ChatList
         v-else
         :hidden-view="route.name === 'hidden'"

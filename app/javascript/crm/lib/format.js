@@ -1,7 +1,12 @@
 import { locale, t } from './i18n';
 
-// Until the team settings exist (stage D3) the threshold is the one from the brief.
-export const OVERDUE_MINUTES = 10;
+// Defaults of the team settings (custom Account#crm_settings) until they load.
+export const DEFAULT_SETTINGS = {
+  overdue_minutes: 10,
+  overdue_minutes_off_hours: 60,
+  lost_reasons: [],
+};
+const WEEKDAYS = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 };
 export const MESSAGE_TYPE = { incoming: 0, outgoing: 1, activity: 2 };
 
 const startOfDay = date =>
@@ -13,9 +18,63 @@ export const waitingMinutes = (waitingSince, now = Date.now()) =>
     ? Math.max(0, Math.floor((now - waitingSince * 1000) / 60000))
     : 0;
 
-export const isOverdue = (chat, now = Date.now()) =>
+// The day and time where the freelancer is: their schedule's time zone, not the browser's.
+const localNow = (timeZone, now) => {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      weekday: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    })
+      .formatToParts(new Date(now))
+      .map(part => [part.type, part.value])
+  );
+  return {
+    day: WEEKDAYS[parts.weekday],
+    time: `${parts.hour}:${parts.minute}`,
+  };
+};
+
+// A freelancer's schedule today: whether it is a working day and the hours (Custom::Schedule on the server).
+export const scheduleToday = (schedule, now = Date.now()) => {
+  if (!schedule) return null;
+  const { day, time } = localNow(schedule.time_zone, now);
+  const workingDay = schedule.days.includes(day);
+  return {
+    workingDay,
+    workingNow: workingDay && time >= schedule.from && time < schedule.to,
+    from: schedule.from,
+    to: schedule.to,
+  };
+};
+
+// A client of a freelancer waits longer before turning red while the freelancer is off;
+// without a schedule (or a freelancer) the shorter threshold applies.
+export const overdueThreshold = (settings, schedule, now = Date.now()) => {
+  const today = scheduleToday(schedule, now);
+  return today && !today.workingNow
+    ? settings.overdue_minutes_off_hours
+    : settings.overdue_minutes;
+};
+
+export const isOverdue = (
+  chat,
+  now = Date.now(),
+  settings = DEFAULT_SETTINGS
+) =>
   Boolean(chat.waiting_since) &&
-  waitingMinutes(chat.waiting_since, now) >= OVERDUE_MINUTES;
+  waitingMinutes(chat.waiting_since, now) >=
+    overdueThreshold(settings, chat.assignee?.schedule, now);
+
+// For the manager deciding whether to hand a client over today.
+export const scheduleLabel = (schedule, now = Date.now()) => {
+  const today = scheduleToday(schedule, now);
+  if (!today) return t('schedule.none');
+  if (!today.workingDay) return t('schedule.day_off');
+  return t('schedule.today', { from: today.from, to: today.to });
+};
 
 export const waitingLabel = minutes =>
   minutes < 60

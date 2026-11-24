@@ -1,28 +1,3 @@
-# Routes of the new interface (crm/PRD.md, stage D), appended so config/routes.rb stays untouched.
-Rails.application.routes.append do
-  get '/api/v1/crm/invitations/:token', to: 'custom/api/v1/crm/invitations#show', defaults: { format: 'json' }
-  post '/api/v1/crm/invitations/:token', to: 'custom/api/v1/crm/invitations#accept', defaults: { format: 'json' }
-  get '/crm', to: 'custom/crm#index', as: :crm
-  get '/crm/*path', to: 'custom/crm#index', format: false
-
-  scope 'api/v1/accounts/:account_id/crm', module: 'custom/api/v1/accounts/crm', as: :crm_api, defaults: { format: 'json' } do
-    resources :chats, only: [:index, :show, :update] do
-      member do
-        post :hide
-        post :handoff
-        delete :hide, action: :unhide
-      end
-    end
-    resources :freelancers, only: [:index, :create, :update, :destroy] do
-      post :invite, on: :member
-    end
-    resources :numbers, only: [:index, :create, :update] do
-      member do
-        post :connect
-        post :restart
-        get :state
-        post :logout
-      end
-    end
-  end
-end
+# Our routes live in custom/config/routes.rb and load right after config/routes.rb (which stays untouched).
+# Being a routes path, the file is reloaded in development without restarting the server.
+Rails.application.config.paths['config/routes.rb'] << Rails.root.join('custom/config/routes.rb').to_s

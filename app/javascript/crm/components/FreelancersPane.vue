@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import BottomSheet from './BottomSheet.vue';
 import ChatAvatar from './ChatAvatar.vue';
 import { t } from '../lib/i18n';
+import { scheduleLabel } from '../lib/format';
 import {
   addFreelancer,
   fetchFreelancers,
@@ -153,6 +154,9 @@ onMounted(load);
                 n: freelancer.clients_count,
               })
             }}
+          </span>
+          <span class="block truncate text-xs text-faint">
+            {{ scheduleLabel(freelancer.schedule) }}
           </span>
         </span>
         <span

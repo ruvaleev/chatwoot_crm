@@ -71,7 +71,29 @@ export const accountApi = accountId => {
     hide: id => request(`${base}/crm/chats/${id}/hide`, { method: 'POST' }),
     handoff: (id, body) =>
       request(`${base}/crm/chats/${id}/handoff`, { method: 'POST', body }),
-    templates: () => request(`${base}/canned_responses`),
+    templates: () => request(`${base}/crm/templates`),
+    saveTemplate: ({ id, ...body }) =>
+      request(`${base}/crm/templates${id ? `/${id}` : ''}`, {
+        method: id ? 'PATCH' : 'POST',
+        body,
+      }),
+    deleteTemplate: id =>
+      request(`${base}/crm/templates/${id}`, { method: 'DELETE' }),
+    saveTeamTemplate: ({ id, ...body }) =>
+      request(`${base}/canned_responses${id ? `/${id}` : ''}`, {
+        method: id ? 'PATCH' : 'POST',
+        body: { canned_response: body },
+      }),
+    deleteTeamTemplate: id =>
+      request(`${base}/canned_responses/${id}`, { method: 'DELETE' }),
+    settings: () => request(`${base}/crm/settings`),
+    saveSchedule: schedule =>
+      request(`${base}/crm/schedule`, { method: 'PATCH', body: schedule }),
+    saveSettings: body =>
+      request(`${base}/crm/settings`, { method: 'PATCH', body }),
+    createLabel: title =>
+      request(`${base}/labels`, { method: 'POST', body: { title } }),
+    deleteLabel: id => request(`${base}/labels/${id}`, { method: 'DELETE' }),
     numbers: () => request(`${base}/crm/numbers`),
     addNumber: name =>
       request(`${base}/crm/numbers`, { method: 'POST', body: { name } }),

@@ -4,7 +4,7 @@ import ChatAvatar from './ChatAvatar.vue';
 import StatusTag from './StatusTag.vue';
 import MessageTicks from './MessageTicks.vue';
 import { t } from '../lib/i18n';
-import { now } from '../lib/store';
+import { now, state } from '../lib/store';
 import {
   isOverdue,
   listTime,
@@ -21,7 +21,9 @@ const props = defineProps({
 const emit = defineEmits(['open', 'menu']);
 
 const LONG_PRESS = 500;
-const overdue = computed(() => isOverdue(props.chat, now.value));
+const overdue = computed(() =>
+  isOverdue(props.chat, now.value, state.settings)
+);
 const last = computed(() => props.chat.last_message);
 let pressTimer = null;
 let pressed = false;
