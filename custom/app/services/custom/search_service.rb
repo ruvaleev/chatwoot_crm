@@ -17,6 +17,6 @@ module Custom::SearchService
 
   # Conversation and contact search match phone numbers; freelancers must not confirm a number that way.
   def crm_phone_lookup?
-    current_user.crm_freelancer? && Custom::PhoneScrubber.phone_like?(search_query)
+    current_user.crm_freelancer? && Custom::PhoneScrubber.number_probe?(search_query)
   end
 end

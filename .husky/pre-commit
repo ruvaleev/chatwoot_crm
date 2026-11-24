@@ -4,8 +4,9 @@
 # lint js and vue files
 npx --no-install lint-staged
 
-# lint only staged ruby files that still exist (not deleted)
-git diff --name-only --cached | xargs -I {} sh -c 'test -f "{}" && echo "{}"' | grep '\.rb$' | xargs -I {} bundle exec rubocop --force-exclusion -a "{}" || true
+# lint staged ruby files that still exist (not deleted)
+# CRM: one RuboCop run for all of them instead of one per file (crm/docs/core-changes.md)
+git diff --name-only --cached --diff-filter=d -z -- '*.rb' | xargs -0 -r bundle exec rubocop --force-exclusion -a || true
 
 # stage rubocop changes to files
 git diff --name-only --cached | xargs -I {} sh -c 'test -f "{}" && git add "{}"' || true

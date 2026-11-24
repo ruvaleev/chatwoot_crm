@@ -1,4 +1,6 @@
 ru:
   crm:
+    push:
+      attachment: 'Вложение'
     contact:
       masked_name: 'Клиент •••%{last_digits}'

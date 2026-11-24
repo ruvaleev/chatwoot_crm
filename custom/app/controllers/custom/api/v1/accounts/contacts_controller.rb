@@ -20,7 +20,7 @@ module Custom::Api::V1::Accounts::ContactsController
   end
 
   def crm_phone_lookup?
-    Custom::PhoneScrubber.phone_like?(params[:q]) ||
+    Custom::PhoneScrubber.number_probe?(params[:q]) ||
       Array(params[:payload]).any? { |condition| PHONE_FILTER_KEYS.include?(condition[:attribute_key].to_s) }
   end
 

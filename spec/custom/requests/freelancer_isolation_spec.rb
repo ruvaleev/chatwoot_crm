@@ -155,12 +155,14 @@ RSpec.describe 'Freelancer isolation', type: :request do
       expect(response.parsed_body['payload']).to include('phone_number' => '+15550104477')
     end
 
-    it 'cannot be found by the freelancer through search' do
-      get "/api/v1/accounts/#{account.id}/contacts/search", params: { q: '550104' }, headers: freelancer.create_new_auth_token, as: :json
-      expect(response.parsed_body['payload']).to be_empty
+    it 'cannot be found by the freelancer through search, not even by a few digits' do
+      %w[550104 4477].each do |digits|
+        get "/api/v1/accounts/#{account.id}/contacts/search", params: { q: digits }, headers: freelancer.create_new_auth_token, as: :json
+        expect(response.parsed_body['payload']).to be_empty
 
-      get "/api/v1/accounts/#{account.id}/search", params: { q: '550104' }, headers: freelancer.create_new_auth_token, as: :json
-      expect(response.parsed_body['payload']).to include('contacts' => [], 'conversations' => [])
+        get "/api/v1/accounts/#{account.id}/search", params: { q: digits }, headers: freelancer.create_new_auth_token, as: :json
+        expect(response.parsed_body['payload']).to include('contacts' => [], 'conversations' => [])
+      end
 
       filter = [{ attribute_key: 'phone_number', filter_operator: 'contains', values: ['555'], query_operator: nil }]
       post "/api/v1/accounts/#{account.id}/contacts/filter", params: { payload: filter }, headers: freelancer.create_new_auth_token, as: :json
@@ -201,19 +203,22 @@ RSpec.describe 'Freelancer isolation', type: :request do
     expect(foreign.reload.contact).to be_present
   end
 
+  # Companies answer 404 anyway (CrmDisabledFeatures); the policy must hold without that block too.
   it 'denies companies, which list and search all contacts of the account' do
-    account.enable_features!('companies')
-    company = create(:company, account: account)
-    foreign.contact.update!(company: company)
+    with_modified_env CRM_BLOCK_UNUSED_FEATURES: 'false' do
+      account.enable_features!('companies')
+      company = create(:company, account: account)
+      foreign.contact.update!(company: company)
 
-    get "/api/v1/accounts/#{account.id}/companies/#{company.id}/contacts", headers: freelancer.create_new_auth_token, as: :json
-    expect(response).to have_http_status(:unauthorized)
+      get "/api/v1/accounts/#{account.id}/companies/#{company.id}/contacts", headers: freelancer.create_new_auth_token, as: :json
+      expect(response).to have_http_status(:unauthorized)
 
-    get "/api/v1/accounts/#{account.id}/companies", headers: freelancer.create_new_auth_token, as: :json
-    expect(response).to have_http_status(:unauthorized)
+      get "/api/v1/accounts/#{account.id}/companies", headers: freelancer.create_new_auth_token, as: :json
+      expect(response).to have_http_status(:unauthorized)
 
-    get "/api/v1/accounts/#{account.id}/companies/#{company.id}/contacts", headers: manager.create_new_auth_token, as: :json
-    expect(response).to have_http_status(:success)
+      get "/api/v1/accounts/#{account.id}/companies/#{company.id}/contacts", headers: manager.create_new_auth_token, as: :json
+      expect(response).to have_http_status(:success)
+    end
   end
 
   it 'turns the companies feature off in the account the freelancer dashboard loads' do
