@@ -126,6 +126,13 @@ export const accountApi = accountId => {
     removeFreelancer: id =>
       request(`${base}/crm/freelancers/${id}`, { method: 'DELETE' }),
     unhide: id => request(`${base}/crm/chats/${id}/hide`, { method: 'DELETE' }),
+    savePushSubscription: body =>
+      request(`${base}/crm/push_subscription`, { method: 'POST', body }),
+    removePushSubscription: endpoint =>
+      request(`${base}/crm/push_subscription`, {
+        method: 'DELETE',
+        body: { endpoint },
+      }),
     messages: (id, before) =>
       request(`${base}/conversations/${id}/messages`, { query: { before } }),
     send: (id, body) =>

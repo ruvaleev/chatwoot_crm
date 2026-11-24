@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import ChatRow from './ChatRow.vue';
 import BottomSheet from './BottomSheet.vue';
+import PushBanner from './PushBanner.vue';
 import { t } from '../lib/i18n';
 import {
   isManager,
@@ -184,6 +185,8 @@ const count = name => list.value.counts[name] || 0;
         </div>
       </template>
     </header>
+
+    <PushBanner />
 
     <label class="mx-3 mb-2 flex items-center gap-3 rounded-lg bg-chip px-3">
       <span class="i-lucide-search size-4 text-faint" />

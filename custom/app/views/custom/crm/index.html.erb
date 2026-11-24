@@ -5,8 +5,13 @@
     <title><%= @installation_name %></title>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="robots" content="noindex">
-    <%# No icon of our own yet and no Chatwoot logo (crm/design/mockups/NOTES.md): an empty one stops the /favicon.ico 404. %>
-    <link rel="icon" href="data:,">
+    <%# Installable app with push (crm/PRD.md, stage P): our own neutral icon, no Chatwoot or WhatsApp logo. %>
+    <link rel="icon" href="/crm/icon.svg" type="image/svg+xml">
+    <link rel="manifest" href="/crm/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/crm/apple-touch-icon.png">
+    <meta name="theme-color" content="#4a52d1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="crm-vapid-key" content="<%= VapidService.public_key %>">
     <%= vite_client_tag %>
     <%= vite_javascript_tag 'crm' %>
   </head>

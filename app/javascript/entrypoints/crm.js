@@ -3,5 +3,7 @@ import '../crm/styles.css';
 import { createApp } from 'vue';
 import App from '../crm/App.vue';
 import router from '../crm/router';
+import { registerWorker } from '../crm/lib/push';
 
 createApp(App).use(router).mount('#crm-app');
+registerWorker();

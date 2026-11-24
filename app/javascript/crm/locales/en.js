@@ -232,4 +232,23 @@ export default {
     'These settings do not fit: check the thresholds and language.',
   'errors.schedule_invalid':
     'This schedule does not fit: check the time zone, days and hours.',
+  'push.title': 'Notifications on this device',
+  'push.enable': 'Turn on',
+  'push.on': 'On — turn off',
+  'push.hint_on':
+    'New client messages arrive here even when the app is closed.',
+  'push.hint_off':
+    'So you don’t miss a client message while the app is closed.',
+  'push.hint_denied':
+    'Notifications are blocked for this site in the browser or phone settings — allow them there.',
+  'push.hint_unsupported':
+    'This browser can’t show notifications. On iPhone, add the app to the Home Screen first: Share → Add to Home Screen.',
+  'push.banner_title': 'Turn on notifications so you don’t miss a client',
+  'push.banner_off':
+    'New messages reach this device even when the app is closed.',
+  'push.banner_denied':
+    'Notifications are blocked for this site — allow them in the browser or phone settings.',
+  'push.banner_unsupported':
+    'On iPhone: Share → Add to Home Screen, then open the app from its icon.',
+  'push.later': 'Later',
 };

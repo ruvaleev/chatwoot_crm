@@ -7,5 +7,6 @@ class Custom::CrmListener < BaseListener
 
     # A hidden chat comes back to every list as soon as the client writes again.
     message.conversation.crm_hidden_conversations.delete_all
+    Custom::PushJob.perform_later(message) if message.conversation.crm_client_chat?
   end
 end

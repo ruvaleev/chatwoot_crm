@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# The production build on this Mac, reachable from phones over HTTPS through ngrok (crm/PRD.md, stage P: PWA and push).
+# Production mode only: development exposes web-console to any IP (crm/HUMAN.md, H1). Uses the development database
+# and Redis, so stop `bin/dev` first; Evolution API (it stops with `bin/dev`) is started here, as in Procfile.crm.
+# Secrets come from .env.development.local; nothing is written to git. Ctrl-C stops everything.
+# For tests only: ngrok sees all traffic (H1), no real clients through it.
+set -euo pipefail
+cd "$(dirname "$0")/../.."
+
+if lsof -nP -iTCP:3000 -sTCP:LISTEN >/dev/null; then
+  echo 'Port 3000 is busy: stop bin/dev first.'
+  exit 1
+fi
+if pgrep -f 'sidekiq .*chatwoot_crm' >/dev/null; then
+  echo 'Sidekiq is running: stop it first (it shares the database and Redis).'
+  exit 1
+fi
+
+pids=()
+trap 'kill "${pids[@]}" 2>/dev/null || true' EXIT
+
+# WhatsApp messages come in through Evolution: without it the app opens, but nothing arrives.
+if ! lsof -nP -iTCP:8080 -sTCP:LISTEN >/dev/null; then
+  (cd "${EVOLUTION_DIR:-$HOME/private_projects/evolution-api}" && exec node dist/main) >log/evolution.log 2>&1 &
+  pids+=($!)
+fi
+
+ngrok http 3000 --log log/ngrok.log >/dev/null &
+pids+=($!)
+url=''
+for _ in $(seq 30); do
+  url=$(curl -s http://127.0.0.1:4040/api/tunnels |
+    ruby -rjson -e 'puts JSON.parse($stdin.read)["tunnels"].map { _1["public_url"] }.grep(/\Ahttps/).first' 2>/dev/null || true)
+  [ -n "$url" ] && break
+  sleep 1
+done
+[ -n "$url" ] || { echo 'ngrok did not start, see log/ngrok.log'; exit 1; }
+
+# Evolution keeps reaching Chatwoot locally, as in development: reconnecting a number here must not leave it the
+# ngrok address.
+run() {
+  dotenv -f .env.development.local env RAILS_ENV=production NODE_ENV=production POSTGRES_DATABASE=chatwoot_dev \
+    FRONTEND_URL="$url" CRM_EVOLUTION_CHATWOOT_URL=http://127.0.0.1:3000 RAILS_LOG_TO_STDOUT=false "$@"
+}
+
+run bin/vite build
+run bundle exec sidekiq -C config/sidekiq.yml >/dev/null &
+pids+=($!)
+echo "Open $url/crm/ on the phones (logs: log/production.log, log/evolution.log, log/ngrok.log). Ctrl-C stops."
+run bin/rails server -p 3000 -b 127.0.0.1

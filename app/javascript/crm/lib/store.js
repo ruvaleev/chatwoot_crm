@@ -356,6 +356,10 @@ export const renameContact = async name => {
 
 // ---------- numbers (managers) ----------
 
+export const savePushSubscription = body => api.savePushSubscription(body);
+export const removePushSubscription = endpoint =>
+  api.removePushSubscription(endpoint);
+
 export const fetchNumbers = () => api.numbers();
 export const addNumber = name => api.addNumber(name);
 export const connectNumber = id => api.connectNumber(id);

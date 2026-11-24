@@ -17,6 +17,7 @@ Rails.application.routes.draw do
     end
     resource :settings, only: [:show, :update]
     resource :schedule, only: [:show, :update]
+    resource :push_subscription, only: [:create, :destroy]
     resources :templates, only: [:index, :create, :update, :destroy]
     resources :freelancers, only: [:index, :create, :update, :destroy] do
       post :invite, on: :member

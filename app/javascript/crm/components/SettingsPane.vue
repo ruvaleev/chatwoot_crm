@@ -6,6 +6,7 @@ import TemplatesEditor from './TemplatesEditor.vue';
 import ScheduleEditor from './ScheduleEditor.vue';
 import { locale, errorKey, t } from '../lib/i18n';
 import { signOut } from '../lib/api';
+import { disablePush, enablePush, push, refreshPush } from '../lib/push';
 import {
   deleteTemplate,
   fetchTemplateGroups,
@@ -43,7 +44,18 @@ const deleteMine = template =>
   changeTemplates(() => deleteTemplate(template, 'personal'));
 onMounted(loadTemplates);
 
+onMounted(refreshPush);
+const togglePush = async () => {
+  try {
+    await (push.value === 'on' ? disablePush() : enablePush());
+  } catch (failure) {
+    toast(errorKey(failure));
+  }
+};
+
 const logout = async () => {
+  // Before the session ends: the device must stop getting this person's notifications.
+  await disablePush().catch(() => null);
   await signOut();
   reset();
   router.replace({ name: 'login' });
@@ -112,6 +124,27 @@ const logout = async () => {
         >
           {{ t(`theme.${theme}`) }}
         </button>
+      </div>
+
+      <h2 class="px-4 pb-2 pt-6 text-sm font-medium text-accent-ink">
+        {{ t('push.title') }}
+      </h2>
+      <div class="px-4">
+        <button
+          v-if="push === 'on' || push === 'off'"
+          type="button"
+          :aria-pressed="push === 'on'"
+          class="h-9 rounded-full px-4 text-sm"
+          :class="
+            push === 'on'
+              ? 'bg-accent-soft text-accent-ink'
+              : 'bg-chip text-muted'
+          "
+          @click="togglePush"
+        >
+          {{ t(push === 'on' ? 'push.on' : 'push.enable') }}
+        </button>
+        <p class="pt-2 text-xs text-faint">{{ t(`push.hint_${push}`) }}</p>
       </div>
 
       <template v-if="!isManager">

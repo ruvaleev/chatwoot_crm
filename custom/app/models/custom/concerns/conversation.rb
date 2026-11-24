@@ -52,6 +52,10 @@ module Custom::Concerns::Conversation
     end
   end
 
+  def crm_client_chat?
+    contact.phone_number != CRM_SERVICE_CONTACT_PHONE
+  end
+
   def crm_visible_to?(user)
     !user.crm_freelancer? || assignee_id == user.id
   end
