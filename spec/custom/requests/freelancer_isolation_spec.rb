@@ -203,19 +203,22 @@ RSpec.describe 'Freelancer isolation', type: :request do
     expect(foreign.reload.contact).to be_present
   end
 
+  # Companies answer 404 anyway (CrmDisabledFeatures); the policy must hold without that block too.
   it 'denies companies, which list and search all contacts of the account' do
-    account.enable_features!('companies')
-    company = create(:company, account: account)
-    foreign.contact.update!(company: company)
+    with_modified_env CRM_BLOCK_UNUSED_FEATURES: 'false' do
+      account.enable_features!('companies')
+      company = create(:company, account: account)
+      foreign.contact.update!(company: company)
 
-    get "/api/v1/accounts/#{account.id}/companies/#{company.id}/contacts", headers: freelancer.create_new_auth_token, as: :json
-    expect(response).to have_http_status(:unauthorized)
+      get "/api/v1/accounts/#{account.id}/companies/#{company.id}/contacts", headers: freelancer.create_new_auth_token, as: :json
+      expect(response).to have_http_status(:unauthorized)
 
-    get "/api/v1/accounts/#{account.id}/companies", headers: freelancer.create_new_auth_token, as: :json
-    expect(response).to have_http_status(:unauthorized)
+      get "/api/v1/accounts/#{account.id}/companies", headers: freelancer.create_new_auth_token, as: :json
+      expect(response).to have_http_status(:unauthorized)
 
-    get "/api/v1/accounts/#{account.id}/companies/#{company.id}/contacts", headers: manager.create_new_auth_token, as: :json
-    expect(response).to have_http_status(:success)
+      get "/api/v1/accounts/#{account.id}/companies/#{company.id}/contacts", headers: manager.create_new_auth_token, as: :json
+      expect(response).to have_http_status(:success)
+    end
   end
 
   it 'turns the companies feature off in the account the freelancer dashboard loads' do

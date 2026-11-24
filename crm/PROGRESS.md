@@ -12,6 +12,43 @@
 
 ---
 
+## 2026-11-24 · Этап L, часть L2 (функции аккаунта и их API) · in progress
+
+**Набор функций — в коде, расширение — флагом** (`custom/lib/custom/features.rb`, решение человека). Базовый
+набор: `agent_management`, `inbox_management`, `labels`, `custom_attributes`, `canned_responses` (шаблоны), `crm` и
+`chatwoot_v4` (старый интерфейс для менеджеров до L3), `api_and_webhooks` (закрывает API только на Chatwoot Cloud).
+Остальные 70 выключены; среди них `companies` (запросы иконок в Google), `contact_chatwoot_support_team` (виджет
+поддержки Chatwoot в старом интерфейсе), `assignment_v2`, `auto_resolve_conversations`, `mobile_voice_push`.
+- Новый аккаунт создаётся сразу с этим набором (`before_create` после стандартных функций Chatwoot) — на сервере
+  ничего запускать не нужно.
+- Расширить: `CRM_EXTRA_FEATURES=reports,campaigns` в ENV — включает флаги и открывает API и страницы этих функций
+  (таблица `ROUTES`), затем `bundle exec rails crm:features` для уже созданных аккаунтов. Неизвестное имя — ошибка.
+- Каналы, кроме нашего API-inbox'а, исходящие вебхуки, CSAT, Platform API, биллинг и экран первой установки закрыты
+  всегда (`ALWAYS_OFF`): их одним флагом не включить.
+- Локально `crm:features` применена к обоим аккаунтам.
+
+**Почему ещё и 404.** Флаги почти везде прячут только интерфейс Chatwoot: API отчётов, кампаний, макросов и т. д.
+отвечает и при выключенном флаге (проверка флагов на сервере — только у кампаний виджета, Help Center и пары
+интеграций). Поэтому Rack-middleware `CrmDisabledFeatures` (`custom/config/initializers/crm_disabled_features.rb`,
+upstream не тронут) отвечает 404 до контроллеров для выключенных функций; при базовом наборе это:
+- API аккаунта: agent_bots, политики назначения, SLA, аудит, автоматизации, кампании, Captain, компании, CSAT,
+  кастомные роли, dashboard-apps, импорт, интеграции, макросы, мониторы, Help Center (portals), отчёты (v2 и
+  reporting_events), SAML, команды, вебхуки, звонки, каналы Twilio/WhatsApp Cloud/соцсети, онбординг;
+- страницы и публичные API: `/hc`, `/widget`, `/api/v1/widget`, `/public/api`, `/survey`, вебхуки и OAuth-колбэки
+  каналов, `/platform/api`, `/enterprise/api` (биллинг), `/captain`, входящая почта, экран первой установки
+  (регистрация в Chatwoot Hub).
+
+Открыто: новый интерфейс и его API, `contacts`, `conversations`, `inboxes`, `labels`, `canned_responses`, профиль,
+вход, супер-админка, ActionCable, `/health`. Evolution 2.3.7 (по исходникам `chatwoot.service.ts`) обращается только
+к `contacts`, `conversations`, `inboxes`, `messages`, `actions` — всё открыто. Проверено через всё приложение
+(`Rack::MockRequest` на dev-базе): закрытое — 404, `/crm/`, `/super_admin/sign_in`, `/health` — 200.
+
+Полный suite upstream проверяет эти функции, поэтому его гоняют с `CRM_BLOCK_UNUSED_FEATURES=false`: без 404 и
+со стандартными функциями у новых аккаунтов (записано в `crm/AGENTS.md`). Спек изоляции на компании проверяет политику с выключенной блокировкой — она остаётся вторым замком.
+Спек `spec/custom/requests/disabled_features_spec.rb`.
+
+---
+
 ## 2026-11-24 · Этап L, часть L1 (фон и выход наружу) · in progress
 
 **Расписание Sidekiq** (`custom/config/initializers/crm_cron_schedule.rb`; `config/schedule.yml` не тронут). Оба

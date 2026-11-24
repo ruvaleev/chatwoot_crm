@@ -20,6 +20,8 @@ module Custom::Concerns::Account
 
   included do
     validate :crm_settings_valid, if: -> { custom_attributes.key?('crm_settings') }
+    # After Chatwoot's own defaults: a new account starts with our features only.
+    before_create :crm_limit_features, if: -> { Custom::Features.enforced? }
   end
 
   def crm_settings
@@ -28,6 +30,16 @@ module Custom::Concerns::Account
 
   def crm_settings=(changes)
     self.custom_attributes = custom_attributes.merge('crm_settings' => crm_settings.merge(changes.stringify_keys.slice(*CRM_SETTINGS_DEFAULTS.keys)))
+  end
+
+  def crm_limit_features
+    enable_features(*Custom::Features.enabled)
+    disable_features(*(all_features.keys - Custom::Features.enabled))
+  end
+
+  def crm_limit_features!
+    crm_limit_features
+    save!
   end
 
   private

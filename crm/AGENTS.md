@@ -101,7 +101,9 @@ inbox'ы. Передача клиента = назначение диалога 
   ставить. Production-ассеты локально не собирать (это делает CI).
 - Обычный цикл проверки — `script/crm/test` (rubocop наших файлов, `spec/custom`, спеки upstream-файлов из
   реестра правок; секунды). Полный suite upstream (около 33 минут в один поток) — только при merge нового
-  релиза upstream, без `spec/enterprise` (upstream сам не гоняет его публично).
+  релиза upstream, без `spec/enterprise` (upstream сам не гоняет его публично), с `CRM_BLOCK_UNUSED_FEATURES=false`
+  (иначе выключенные нами функции отвечают 404, новые аккаунты создаются без них и их спеки падают, см.
+  `custom/lib/custom/features.rb`).
 
 ## Стек и соглашения деплоя
 
