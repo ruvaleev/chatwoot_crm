@@ -12,6 +12,52 @@
 
 ---
 
+## 2026-11-24 · Этап L, часть L1 (фон и выход наружу) · in progress
+
+**Расписание Sidekiq** (`custom/config/initializers/crm_cron_schedule.rb`; `config/schedule.yml` не тронут). Оба
+загрузчика (upstream в `config/initializers/sidekiq.rb` и свой у sidekiq-cron при старте) идут через
+`Sidekiq::Cron::Job.load_from_hash!`; фильтр оставляет наши задачи, остальные удаляются и из Redis. Спек
+`spec/custom/configs/cron_schedule_spec.rb`.
+
+| Задача | Частота | Решение | Почему |
+|---|---|---|---|
+| `remove_old_notification_job` | раз в сутки | оставить | чистит уведомления старше месяца |
+| `remove_orphan_conversations_job` | раз в 12 ч | оставить | удаляет диалоги без контакта/inbox'а |
+| `remove_stale_redis_keys_job.rb` | раз в сутки | оставить | чистит устаревшие ключи онлайн-статусов |
+| `dispatch_conversation_monitors_job` | каждую минуту | убрать | мониторы — enterprise; для эскалаций (этап 5) решим там |
+| `internal_check_new_versions_job` | раз в сутки | убрать | проверка версий и телеметрия в Chatwoot Hub |
+| `trigger_scheduled_items_job` | каждые 5 мин | убрать | кампании, отложенные диалоги, шаблоны WhatsApp Cloud, отложенные автоматизации, SLA, Captain (+7 задач за запуск) |
+| `trigger_conversations_resolution_job` | каждые 5 мин | убрать | автозакрытие диалогов |
+| `trigger_hourly_scheduled_items_job` | раз в час | убрать | здоровье каналов WhatsApp Cloud |
+| `voice_ringing_timeout_job` | каждые 30 с | убрать | звонки |
+| `trigger_imap_email_inboxes_job` | каждую минуту | убрать | почтовые inbox'ы |
+| `remove_stale_contact_inboxes_job.rb` | раз в сутки | убрать | посетители сайт-виджета |
+| `delete_accounts_job` | раз в сутки | убрать | удаление аккаунтов по запросу |
+| `periodic_assignment_job` | каждые 30 мин | убрать | авто-назначение (выключено, этап D) |
+
+Замер «до» (по расписанию, Fugit): ~267 запусков в час + порождённые (`trigger_scheduled_items` ставит ещё 7 за
+запуск, автозакрытие и назначение — по задаче на аккаунт): больше 350 задач в час в покое. «После»: 4 запуска в
+сутки. Живой замер dev-Sidekiq за 10 минут в покое: 2 задачи за 06:44–06:54 UTC (обе не из расписания: ни одна из трёх оставшихся за это время не наступала; какие именно — Sidekiq не хранит). Со старым расписанием за те же 10 минут было бы ~60.
+
+**Исходящие вызовы Chatwoot** (поиск по `app`, `lib`, `enterprise`, `config/initializers`):
+
+| Куда | Когда | Как выключено |
+|---|---|---|
+| Chatwoot Hub: проверка версий + телеметрия (`ChatwootHub.sync_with_hub`) | раз в сутки, только production | задача убрана из расписания; `DISABLE_TELEMETRY=true` вторым замком |
+| Chatwoot Hub: регистрация установки | экран первой установки, галочка «подписаться» | на сервере не используем (учётки — из консоли); маршрут закроет L2 |
+| Chatwoot Hub: push-relay мобильного приложения | при уведомлении, если есть push-подписка | `ENABLE_PUSH_RELAY_SERVER=false` (по умолчанию в Chatwoot `true`) |
+| gravatar.com (хэш email) | создание/смена email пользователя или контакта | `DISABLE_GRAVATAR=true` (ENV или `InstallationConfig`) |
+| Google favicons (домен компании) | создание компании по email контакта | флаг `companies` выключит L2 |
+| Sentry, Datadog, New Relic, Scout, Elastic APM, Judoscale | только с ключом в ENV | ключей не задаём |
+| Аналитика порталов Help Center (GA, Hotjar и т. п.) | в браузере посетителя портала | Help Center выключит L2 |
+| Серверы WhatsApp (аватарки контактов, `Avatar::AvatarFromUrlJob`) | новый контакт от Evolution | оставлено: та же сторона, что и Evolution |
+
+Переключатели — ENV, а не значения по умолчанию в коде: спеки upstream рассчитаны на стандартные значения. Для
+сервера записаны в задачу этапа 2 (`config/deploy.yml`, `env.clear`), проверка часом в покое — AC2.5. Локально —
+в `.env.development.local` (`ENABLE_PUSH_RELAY_SERVER` был `true`, теперь `false`).
+
+---
+
 ## 2026-11-24 · Этап D раунд 2 и D.1 · ready for review
 
 **Сделано** (ответ по пунктам — `crm/reviews/stage-D.md`)
