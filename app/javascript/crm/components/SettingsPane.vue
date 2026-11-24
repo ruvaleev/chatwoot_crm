@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import ChatAvatar from './ChatAvatar.vue';
 import TemplatesEditor from './TemplatesEditor.vue';
 import ScheduleEditor from './ScheduleEditor.vue';
-import { locale, t } from '../lib/i18n';
+import { locale, errorKey, t } from '../lib/i18n';
 import { signOut } from '../lib/api';
 import {
   deleteTemplate,
@@ -31,8 +31,8 @@ const changeTemplates = async action => {
   try {
     await action();
     await loadTemplates();
-  } catch {
-    toast('error.generic');
+  } catch (failure) {
+    toast(errorKey(failure));
   } finally {
     busy.value = false;
   }

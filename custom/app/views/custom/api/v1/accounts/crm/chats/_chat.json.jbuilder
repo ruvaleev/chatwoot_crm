@@ -1,9 +1,9 @@
-last_message = chat.messages.non_activity_messages.where(private: false).first
+last_message = @last_messages[chat.id]
 json.id chat.display_id
 json.contact do
   json.id chat.contact_id
   json.name chat.contact.name
-  json.labels chat.contact.label_list
+  json.labels chat.contact.labels.map(&:name)
 end
 json.inbox do
   json.id chat.inbox_id
@@ -15,7 +15,7 @@ json.assignee chat.assignee && { id: chat.assignee.id, name: chat.assignee.name,
 json.status chat.crm_status
 json.waiting_since chat.waiting_since&.to_i
 json.last_activity_at chat.last_activity_at.to_i
-json.unread_count chat.unread_incoming_messages.count
+json.unread_count @unread_counts.fetch(chat.id, 0)
 json.last_message do
   if last_message
     json.content last_message.content.to_s.truncate(200)

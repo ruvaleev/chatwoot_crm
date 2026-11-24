@@ -161,7 +161,7 @@ export default {
   'freelancers.login': 'Логин',
   'freelancers.login_placeholder': 'anna.v',
   'freelancers.login_hint':
-    'Латиница, цифры, точка и дефис. С ним фрилансер будет входить.',
+    'Латиница, цифры, точка, дефис и подчёркивание. С ним фрилансер будет входить.',
   'freelancers.create': 'Добавить и получить ссылку',
   'freelancers.link_title': 'Ссылка для входа',
   'freelancers.link_text':
@@ -221,4 +221,17 @@ export default {
   'schedule.today': 'сегодня {from}–{to}',
   'schedule.day_off': 'сегодня выходной',
   'schedule.none': 'расписание не указано',
+  'composer.emoji': 'Эмодзи',
+  'composer.from_as': 'С «{number}» как {name}',
+  'composer.from': 'С «{number}»',
+  'errors.login_invalid':
+    'Логин: от 2 до 31 символа — латиница, цифры, точка, дефис, подчёркивание.',
+  'errors.login_taken': 'Такой логин уже занят.',
+  'errors.not_freelancer': 'Этот сотрудник не фрилансер.',
+  'errors.no_freelancer': 'За этим номером не закреплён фрилансер.',
+  'errors.status_not_allowed': 'Этот статус вам недоступен.',
+  'errors.deal_field_too_long': 'Слишком длинное значение: до 200 символов.',
+  'errors.settings_invalid': 'Настройки не подходят: проверьте пороги и язык.',
+  'errors.schedule_invalid':
+    'Расписание не подходит: проверьте часовой пояс, дни и часы.',
 };

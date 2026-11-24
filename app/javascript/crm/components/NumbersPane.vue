@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import BottomSheet from './BottomSheet.vue';
-import { t } from '../lib/i18n';
+import { errorKey, t } from '../lib/i18n';
 import {
   addNumber,
   assignNumber,
@@ -82,8 +82,8 @@ const run = async action => {
   busy.value = true;
   try {
     await action();
-  } catch {
-    toast('error.generic');
+  } catch (failure) {
+    toast(errorKey(failure));
   } finally {
     busy.value = false;
   }
@@ -187,6 +187,12 @@ onBeforeUnmount(stopQr);
         </span>
         <span class="min-w-0 flex-1">
           <span class="block truncate font-medium">{{ number.name }}</span>
+          <span
+            v-if="number.phone_number"
+            class="block truncate text-xs text-faint"
+          >
+            {{ number.phone_number }}
+          </span>
           <span class="block truncate text-sm text-muted">
             {{ number.freelancer?.name || t('numbers.no_freelancer') }}
           </span>

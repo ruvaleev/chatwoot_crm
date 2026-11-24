@@ -60,7 +60,7 @@ class Custom::Api::V1::Accounts::Crm::NumbersController < Api::V1::Accounts::Bas
     return if params[:freelancer_id].blank?
 
     @freelancer = Current.account.users.find(params[:freelancer_id])
-    render_could_not_create_error('Not a freelancer') unless @freelancer.crm_freelancer?
+    render_could_not_create_error('not_freelancer') unless @freelancer.crm_freelancer?
   end
 
   def ensure_manager

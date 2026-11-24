@@ -67,9 +67,9 @@ class Custom::Api::V1::Accounts::Crm::FreelancersController < Api::V1::Accounts:
   end
 
   def validate_login
-    return render_could_not_create_error('Login: 2–31 latin letters, digits, dot, dash') unless LOGIN_FORMAT.match?(params[:login].to_s)
+    return render_could_not_create_error('login_invalid') unless LOGIN_FORMAT.match?(params[:login].to_s)
 
-    render_could_not_create_error('Login is taken') if User.exists?(email: login_email)
+    render_could_not_create_error('login_taken') if User.exists?(email: login_email)
   end
 
   def login_email
@@ -77,7 +77,8 @@ class Custom::Api::V1::Accounts::Crm::FreelancersController < Api::V1::Accounts:
   end
 
   def invite_url(user)
-    "#{ENV.fetch('FRONTEND_URL')}/crm/invite/#{Custom::Invitation.issue!(user)}"
+    # After "#": browsers don't send it, so the token stays out of server logs.
+    "#{ENV.fetch('FRONTEND_URL')}/crm/invite##{Custom::Invitation.issue!(user)}"
   end
 
   def ensure_manager

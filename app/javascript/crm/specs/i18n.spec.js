@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { LOCALES, setLocale, t } from '../lib/i18n';
+import { errorKey, LOCALES, setLocale, t } from '../lib/i18n';
 
 describe('i18n', () => {
   afterEach(() => setLocale('ru'));
@@ -21,5 +21,18 @@ describe('i18n', () => {
   it('falls back to Russian for an unknown language', () => {
     setLocale('xx');
     expect(t('nav.chats')).toBe('Чаты');
+  });
+
+  it('shows server error codes in the interface language, anything else as a generic failure', () => {
+    expect(errorKey({ status: 422, message: 'login_taken' })).toBe(
+      'errors.login_taken'
+    );
+    expect(errorKey({ status: 422, message: 'Something in English' })).toBe(
+      'error.generic'
+    );
+    expect(errorKey({ status: 500, message: 'login_taken' })).toBe(
+      'error.generic'
+    );
+    expect(errorKey(new Error('offline'))).toBe('error.generic');
   });
 });

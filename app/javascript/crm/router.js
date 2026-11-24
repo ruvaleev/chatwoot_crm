@@ -35,7 +35,8 @@ const router = createRouter({
       meta: { manager: true },
     },
     {
-      path: '/invite/:token',
+      // The token comes after '#', so it never reaches server logs.
+      path: '/invite',
       name: 'invite',
       component: InviteView,
       meta: { public: true, invite: true },

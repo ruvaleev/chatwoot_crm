@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import BottomSheet from './BottomSheet.vue';
 import ChatAvatar from './ChatAvatar.vue';
-import { t } from '../lib/i18n';
+import { errorKey, t } from '../lib/i18n';
 import {
   fetchLabels,
   renameContact,
@@ -49,8 +49,8 @@ const run = async (action, savedToast = 'toast.saved') => {
   try {
     await action();
     if (savedToast) toast(savedToast);
-  } catch {
-    toast('error.generic');
+  } catch (failure) {
+    toast(errorKey(failure));
   }
 };
 

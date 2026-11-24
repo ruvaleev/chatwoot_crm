@@ -12,6 +12,11 @@ export const setUnauthorizedHandler = handler => {
   onUnauthorized = handler;
 };
 
+// Chatwoot also answers 401 when a signed-in user may not open a record (Pundit), e.g. a chat reassigned away from
+// a freelancer while its link is still open. Only an expired session signs the user out.
+const sessionExpired = async () =>
+  (await fetch('/api/v1/profile', { headers: authHeaders() })).status === 401;
+
 export const request = async (path, { method = 'GET', body, query } = {}) => {
   const url = new URL(path, window.location.origin);
   Object.entries(query || {}).forEach(([key, value]) => {
@@ -26,7 +31,7 @@ export const request = async (path, { method = 'GET', body, query } = {}) => {
     headers,
     body: isForm || !body ? body : JSON.stringify(body),
   });
-  if (response.status === 401) {
+  if (response.status === 401 && (await sessionExpired())) {
     clearSession();
     onUnauthorized();
   }
@@ -158,10 +163,11 @@ export const profileApi = {
 
 // The sign-in link: no session yet, the token is the credential.
 export const invitationApi = {
-  get: token => request(`/api/v1/crm/invitations/${token}`),
+  get: token =>
+    request('/api/v1/crm/invitation', { method: 'POST', body: { token } }),
   accept: (token, password, confirmation) =>
-    request(`/api/v1/crm/invitations/${token}`, {
+    request('/api/v1/crm/invitation/accept', {
       method: 'POST',
-      body: { password, password_confirmation: confirmation },
+      body: { token, password, password_confirmation: confirmation },
     }),
 };

@@ -158,7 +158,7 @@ export default {
   'freelancers.login': 'Login',
   'freelancers.login_placeholder': 'anna.v',
   'freelancers.login_hint':
-    'Latin letters, digits, dot and dash. The freelancer signs in with it.',
+    'Latin letters, digits, dot, dash and underscore. The freelancer signs in with it.',
   'freelancers.create': 'Add and get the link',
   'freelancers.link_title': 'Sign-in link',
   'freelancers.link_text':
@@ -218,4 +218,18 @@ export default {
   'schedule.today': 'today {from}–{to}',
   'schedule.day_off': 'day off today',
   'schedule.none': 'no schedule yet',
+  'composer.emoji': 'Emoji',
+  'composer.from_as': 'From "{number}" as {name}',
+  'composer.from': 'From "{number}"',
+  'errors.login_invalid':
+    'Login: 2 to 31 characters — Latin letters, digits, dot, dash, underscore.',
+  'errors.login_taken': 'This login is taken.',
+  'errors.not_freelancer': 'This person is not a freelancer.',
+  'errors.no_freelancer': 'No freelancer is assigned to this number.',
+  'errors.status_not_allowed': 'This status is not available to you.',
+  'errors.deal_field_too_long': 'Too long: up to 200 characters.',
+  'errors.settings_invalid':
+    'These settings do not fit: check the thresholds and language.',
+  'errors.schedule_invalid':
+    'This schedule does not fit: check the time zone, days and hours.',
 };

@@ -2,10 +2,51 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import BottomSheet from './BottomSheet.vue';
 import { t } from '../lib/i18n';
-import { fetchTemplates, sendMessage, toast } from '../lib/store';
+import {
+  fetchTemplates,
+  isManager,
+  sendMessage,
+  state,
+  toast,
+} from '../lib/store';
 import { fileSize, matchTemplates, voiceFileName } from '../lib/format';
 
+// The usual few on a desktop keyboard; phones bring their own emoji keyboard. No library: bundle budget (AC D.8).
+const EMOJI = [
+  '😀',
+  '😂',
+  '😊',
+  '😍',
+  '😉',
+  '🤔',
+  '😅',
+  '😢',
+  '😮',
+  '😎',
+  '🙏',
+  '👍',
+  '👎',
+  '👌',
+  '👋',
+  '🤝',
+  '💪',
+  '🎉',
+  '🔥',
+  '❤️',
+  '✅',
+  '❌',
+  '⏰',
+  '📅',
+  '📍',
+  '📞',
+  '💬',
+  '📷',
+  '🏠',
+  '💰',
+];
+
 const text = ref('');
+const emojiOpen = ref(false);
 const isNote = ref(false);
 const attachOpen = ref(false);
 const pending = ref([]);
@@ -19,6 +60,17 @@ let chunks = [];
 let timer = null;
 
 const canSend = computed(() => text.value.trim().length > 0);
+// A manager writes from a freelancer's number: say from which and as whom, right where they type.
+const fromLabel = computed(() => {
+  const inbox = state.chat.header?.inbox;
+  if (!isManager.value || !inbox) return '';
+  return inbox.freelancer
+    ? t('composer.from_as', { number: inbox.name, name: inbox.freelancer.name })
+    : t('composer.from', { number: inbox.name });
+});
+const addEmoji = emoji => {
+  text.value += emoji;
+};
 const templates = ref(null);
 const templateQuery = computed(() =>
   text.value.startsWith('/') ? text.value.slice(1) : null
@@ -151,6 +203,12 @@ onBeforeUnmount(() => {
       >
         <span class="i-lucide-lock size-3" />{{ t('composer.to_note') }}
       </button>
+      <span
+        v-if="fromLabel && !isNote"
+        class="ms-auto self-center truncate text-xs text-faint"
+      >
+        {{ fromLabel }}
+      </span>
     </div>
 
     <div v-if="recording" class="flex items-center gap-2">
@@ -212,6 +270,34 @@ onBeforeUnmount(() => {
             </button>
           </li>
         </ul>
+        <button
+          type="button"
+          class="grid size-10 shrink-0 place-items-center rounded-full text-muted hover:bg-hover"
+          :aria-label="t('composer.emoji')"
+          :aria-expanded="emojiOpen"
+          @click="emojiOpen = !emojiOpen"
+        >
+          <span class="i-lucide-smile size-5" />
+        </button>
+        <div
+          v-if="emojiOpen"
+          class="fixed inset-0 z-20"
+          @click="emojiOpen = false"
+        />
+        <div
+          v-if="emojiOpen"
+          class="absolute bottom-12 start-0 z-30 grid w-72 grid-cols-6 gap-1 rounded-xl bg-panel p-2 shadow-pop"
+        >
+          <button
+            v-for="emoji in EMOJI"
+            :key="emoji"
+            type="button"
+            class="grid size-10 place-items-center rounded-lg text-xl hover:bg-hover"
+            @click="addEmoji(emoji)"
+          >
+            {{ emoji }}
+          </button>
+        </div>
         <button
           type="button"
           class="grid size-10 shrink-0 place-items-center rounded-full text-muted hover:bg-hover"

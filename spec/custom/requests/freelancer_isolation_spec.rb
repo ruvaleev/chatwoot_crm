@@ -155,12 +155,14 @@ RSpec.describe 'Freelancer isolation', type: :request do
       expect(response.parsed_body['payload']).to include('phone_number' => '+15550104477')
     end
 
-    it 'cannot be found by the freelancer through search' do
-      get "/api/v1/accounts/#{account.id}/contacts/search", params: { q: '550104' }, headers: freelancer.create_new_auth_token, as: :json
-      expect(response.parsed_body['payload']).to be_empty
+    it 'cannot be found by the freelancer through search, not even by a few digits' do
+      %w[550104 4477].each do |digits|
+        get "/api/v1/accounts/#{account.id}/contacts/search", params: { q: digits }, headers: freelancer.create_new_auth_token, as: :json
+        expect(response.parsed_body['payload']).to be_empty
 
-      get "/api/v1/accounts/#{account.id}/search", params: { q: '550104' }, headers: freelancer.create_new_auth_token, as: :json
-      expect(response.parsed_body['payload']).to include('contacts' => [], 'conversations' => [])
+        get "/api/v1/accounts/#{account.id}/search", params: { q: digits }, headers: freelancer.create_new_auth_token, as: :json
+        expect(response.parsed_body['payload']).to include('contacts' => [], 'conversations' => [])
+      end
 
       filter = [{ attribute_key: 'phone_number', filter_operator: 'contains', values: ['555'], query_operator: nil }]
       post "/api/v1/accounts/#{account.id}/contacts/filter", params: { payload: filter }, headers: freelancer.create_new_auth_token, as: :json

@@ -8,6 +8,7 @@ import { t } from '../lib/i18n';
 
 const route = useRoute();
 const router = useRouter();
+const token = route.hash.slice(1);
 
 const invitation = ref(null);
 const broken = ref(false);
@@ -17,8 +18,12 @@ const error = ref('');
 const busy = ref(false);
 
 onMounted(async () => {
+  if (!token) {
+    broken.value = true;
+    return;
+  }
   try {
-    invitation.value = await invitationApi.get(route.params.token);
+    invitation.value = await invitationApi.get(token);
   } catch {
     broken.value = true;
   }
@@ -33,7 +38,7 @@ const submit = async () => {
   busy.value = true;
   try {
     const { login } = await invitationApi.accept(
-      route.params.token,
+      token,
       password.value,
       confirmation.value
     );

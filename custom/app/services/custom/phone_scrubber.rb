@@ -16,6 +16,12 @@ class Custom::PhoneScrubber
     text.to_s.count('0-9') >= MIN_PHONE_DIGITS
   end
 
+  # Searches for a freelancer: any digit in the query could probe part of a client's number (a name made of the
+  # number, the phone, the WhatsApp id), and a few digits at a time add up to the whole number.
+  def self.number_probe?(text)
+    text.to_s.match?(/\d/)
+  end
+
   def scrub(value)
     case value
     when Hash then value.each_with_object(value.class.new) { |(key, item), result| result[key] = scrub_pair(key.to_s, item) }

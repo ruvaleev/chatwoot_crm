@@ -2,7 +2,7 @@
 import { onMounted, reactive, ref, toRaw } from 'vue';
 import { useRouter } from 'vue-router';
 import TemplatesEditor from './TemplatesEditor.vue';
-import { t } from '../lib/i18n';
+import { errorKey, t } from '../lib/i18n';
 import {
   createLabel,
   deleteLabel,
@@ -31,8 +31,8 @@ const run = async (action, savedToast = 'toast.saved') => {
   try {
     await action();
     if (savedToast) toast(savedToast);
-  } catch {
-    toast('error.generic');
+  } catch (failure) {
+    toast(errorKey(failure));
   } finally {
     busy.value = false;
   }

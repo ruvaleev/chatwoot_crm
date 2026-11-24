@@ -65,22 +65,45 @@ RSpec.describe 'CRM numbers API', type: :request do
     expect(response.parsed_body).to eq('state' => 'connecting')
   end
 
-  it 'assigns one freelancer per number and one number per freelancer' do
+  it 'assigns one freelancer per number and hands the number clients over with it' do
     other = create(:inbox, account: account)
     create(:inbox_member, inbox: other, user: freelancer)
+    left_behind = create(:conversation, account: account, inbox: other, assignee: freelancer)
     previous = create(:user, account: account, role: :agent, custom_attributes: { crm_freelancer: true })
     create(:inbox_member, inbox: number, user: previous)
+    client = create(:conversation, account: account, inbox: number, assignee: previous)
 
     patch "#{numbers_path}/#{number.id}", params: { freelancer_id: freelancer.id }, headers: manager.create_new_auth_token, as: :json
 
     expect(number.reload.members).to contain_exactly(freelancer)
     expect(other.reload.members).to be_empty
+    expect(client.reload.assignee).to eq(freelancer)
+    expect(left_behind.reload.assignee).to be_nil
+  end
+
+  it 'returns the clients to the new queue when the number is left without a freelancer' do
+    create(:inbox_member, inbox: number, user: freelancer)
+    client = create(:conversation, account: account, inbox: number, assignee: freelancer)
+
+    patch "#{numbers_path}/#{number.id}", params: { freelancer_id: nil }, headers: manager.create_new_auth_token, as: :json
+
+    expect(client.reload.assignee).to be_nil
+  end
+
+  it 'creates number inboxes without auto-assignment, so a manager qualifies new clients first' do
+    evolution_channel = Channel::Api.create!(account: account, webhook_url: "#{evolution_url}/chatwoot/webhook/number-b")
+
+    inbox = Inbox.create!(account: account, channel: evolution_channel, name: 'Number B')
+
+    expect(inbox.enable_auto_assignment).to be(false)
+    expect(create(:inbox, account: account).enable_auto_assignment).to be(true)
   end
 
   it 'refuses to assign a number to someone who is not a freelancer' do
     patch "#{numbers_path}/#{number.id}", params: { freelancer_id: manager.id }, headers: manager.create_new_auth_token, as: :json
 
     expect(response).to have_http_status(:unprocessable_content)
+    expect(response.parsed_body['error']).to eq('not_freelancer')
   end
 
   it 'restarts the connection of a number without a QR code' do

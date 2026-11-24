@@ -21,3 +21,11 @@ export const t = (key, params = {}) => {
     name in params ? params[name] : match
   );
 };
+
+// Our endpoints answer 422 with an error code; its text lives here. Anything else reads as a generic failure.
+export const errorKey = failure => {
+  const key = `errors.${failure?.message}`;
+  return failure?.status === 422 && key in LOCALES[DEFAULT_LOCALE]
+    ? key
+    : 'error.generic';
+};

@@ -20,8 +20,8 @@ RSpec.describe 'CRM freelancers and invitations', type: :request do
       expect(user).to have_attributes(name: 'Anna', crm_freelancer?: true)
       expect(account.account_users.find_by!(user: user)).to be_agent
       expect(number.reload.crm_freelancer).to eq(user)
-      expect(response.parsed_body['invite_url']).to start_with('https://chat.example.test/crm/invite/')
-      token = response.parsed_body['invite_url'].split('/crm/invite/').last
+      expect(response.parsed_body['invite_url']).to start_with('https://chat.example.test/crm/invite#')
+      token = response.parsed_body['invite_url'].split('/crm/invite#').last
       expect(Custom::Invitation.find_by(token_digest: token)).to be_nil # only the digest is stored
       expect(Custom::Invitation.find_usable(token).user).to eq(user)
     end
@@ -89,35 +89,35 @@ RSpec.describe 'CRM freelancers and invitations', type: :request do
     let(:token) { Custom::Invitation.issue!(freelancer) }
 
     it 'shows who it is for and sets the password once' do
-      get "/api/v1/crm/invitations/#{token}", as: :json
+      post '/api/v1/crm/invitation', params: { token: token }, as: :json
       expect(response.parsed_body).to eq('name' => 'Anna', 'login' => 'anna.v')
 
-      post "/api/v1/crm/invitations/#{token}", params: { password: password, password_confirmation: password }, as: :json
+      post '/api/v1/crm/invitation/accept', params: { token: token, password: password, password_confirmation: password }, as: :json
       expect(response).to have_http_status(:success)
       expect(freelancer.reload.valid_password?(password)).to be(true)
 
-      get "/api/v1/crm/invitations/#{token}", as: :json
+      post '/api/v1/crm/invitation', params: { token: token }, as: :json
       expect(response).to have_http_status(:not_found)
     end
 
     it 'stops working after a day or when a new link is issued' do
       expired = token
       travel 25.hours do
-        get "/api/v1/crm/invitations/#{expired}", as: :json
+        post '/api/v1/crm/invitation', params: { token: expired }, as: :json
         expect(response).to have_http_status(:not_found)
       end
 
       replaced = Custom::Invitation.issue!(freelancer)
       Custom::Invitation.issue!(freelancer)
-      get "/api/v1/crm/invitations/#{replaced}", as: :json
+      post '/api/v1/crm/invitation', params: { token: replaced }, as: :json
       expect(response).to have_http_status(:not_found)
     end
 
     it 'keeps the link usable after a weak password' do
-      post "/api/v1/crm/invitations/#{token}", params: { password: 'short', password_confirmation: 'short' }, as: :json
+      post '/api/v1/crm/invitation/accept', params: { token: token, password: 'short', password_confirmation: 'short' }, as: :json
 
       expect(response).to have_http_status(:unprocessable_content)
-      get "/api/v1/crm/invitations/#{token}", as: :json
+      post '/api/v1/crm/invitation', params: { token: token }, as: :json
       expect(response).to have_http_status(:success)
     end
   end

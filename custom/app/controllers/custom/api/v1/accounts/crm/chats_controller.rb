@@ -5,6 +5,7 @@ class Custom::Api::V1::Accounts::Crm::ChatsController < Api::V1::Accounts::BaseC
   # Like a messenger by default; "waiting" puts the longest wait first.
   SORTS = %w[recent waiting].freeze
   PER_PAGE = 50
+  DEAL_FIELD_LIMIT = 200
 
   before_action :validate_list_params, only: :index
   before_action :fetch_chat, except: :index
@@ -18,15 +19,18 @@ class Custom::Api::V1::Accounts::Crm::ChatsController < Api::V1::Accounts::BaseC
     shown = narrowed(clients.where.not(id: hidden_ids))
     @counts = tab_counts(shown).merge(hidden: hidden.count)
     @inboxes = Current.user.assigned_inboxes.order(:name)
-    @chats = filtered(hidden, shown).includes(:contact, :assignee, inbox: :members).page(params[:page]).per(PER_PAGE)
+    @chats = filtered(hidden, shown).includes({ contact: :labels }, :assignee, inbox: :members).page(params[:page]).per(PER_PAGE)
+    load_rows(@chats)
   end
 
   def show
     @number_state = number_state
+    load_rows([@chat])
   end
 
   def update
     @chat.update!(custom_attributes: @chat.custom_attributes.merge(update_attributes))
+    load_rows([@chat])
     render :show
   end
 
@@ -37,6 +41,7 @@ class Custom::Api::V1::Accounts::Crm::ChatsController < Api::V1::Accounts::BaseC
       @chat.update!(assignee: @handoff_target,
                     custom_attributes: @chat.custom_attributes.merge('crm_status' => 'handed_off', 'crm_brief_message_id' => brief.id))
     end
+    load_rows([@chat])
     render :show
   end
 
@@ -63,6 +68,12 @@ class Custom::Api::V1::Accounts::Crm::ChatsController < Api::V1::Accounts::BaseC
     'unknown'
   end
 
+  def load_rows(chats)
+    ids = chats.map(&:id)
+    @last_messages = Conversation.crm_last_messages(ids)
+    @unread_counts = Conversation.crm_unread_counts(ids)
+  end
+
   def visible_chats
     Conversations::PermissionFilterService.new(Current.account.conversations, Current.user, Current.account).perform
   end
@@ -82,12 +93,11 @@ class Custom::Api::V1::Accounts::Crm::ChatsController < Api::V1::Accounts::BaseC
     params[:q].present? ? searched(chats, params[:q].strip) : chats
   end
 
-  # Freelancers can't look a client up by phone: that would confirm a number they are not shown.
+  # Freelancers can't look a client up by phone: with any digit in the query they search message text only,
+  # otherwise a few digits at a time would confirm a number they are not shown.
   def searched(chats, query)
     freelancer = Current.user.crm_freelancer?
-    return chats.none if freelancer && Custom::PhoneScrubber.phone_like?(query)
-
-    chats.crm_matching(query, phone: !freelancer)
+    chats.crm_matching(query, contacts: !(freelancer && Custom::PhoneScrubber.number_probe?(query)), phone: !freelancer)
   end
 
   def filtered(hidden, shown)
@@ -118,11 +128,13 @@ class Custom::Api::V1::Accounts::Crm::ChatsController < Api::V1::Accounts::BaseC
     render_could_not_create_error("Unknown status: #{params[:status]}")
   end
 
+  # Errors the interface shows are codes; their texts live in its RU/EN dictionaries.
   def validate_update
     status = update_params[:status]
-    return if status.nil? || allowed_statuses.include?(status)
+    return render_could_not_create_error('status_not_allowed') unless status.nil? || allowed_statuses.include?(status)
 
-    render_could_not_create_error("Status not allowed: #{status}")
+    too_long = Conversation::CRM_DEAL_FIELDS.any? { |field| update_params[field].to_s.length > DEAL_FIELD_LIMIT }
+    render_could_not_create_error('deal_field_too_long') if too_long
   end
 
   def ensure_manager
@@ -132,7 +144,7 @@ class Custom::Api::V1::Accounts::Crm::ChatsController < Api::V1::Accounts::BaseC
   # By default the freelancer the number is assigned to; otherwise someone with access to the number's inbox.
   def fetch_handoff_target
     @handoff_target = params[:assignee_id].present? ? @chat.inbox.members.find_by(id: params[:assignee_id]) : @chat.inbox.crm_freelancer
-    render_could_not_create_error('No freelancer for this number') if @handoff_target.nil?
+    render_could_not_create_error('no_freelancer') if @handoff_target.nil?
   end
 
   def allowed_statuses

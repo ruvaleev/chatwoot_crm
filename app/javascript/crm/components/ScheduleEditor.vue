@@ -1,6 +1,6 @@
 <script setup>
 import { reactive, ref, toRaw } from 'vue';
-import { locale, t } from '../lib/i18n';
+import { locale, errorKey, t } from '../lib/i18n';
 import { saveSchedule, state, toast } from '../lib/store';
 
 const DAYS = [1, 2, 3, 4, 5, 6, 7];
@@ -36,8 +36,8 @@ const save = async () => {
   try {
     await saveSchedule({ ...form });
     toast('toast.saved');
-  } catch {
-    toast('error.generic');
+  } catch (failure) {
+    toast(errorKey(failure));
   } finally {
     busy.value = false;
   }

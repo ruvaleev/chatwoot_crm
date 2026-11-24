@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import BottomSheet from './BottomSheet.vue';
 import ChatAvatar from './ChatAvatar.vue';
-import { t } from '../lib/i18n';
+import { errorKey, t } from '../lib/i18n';
 import { scheduleLabel } from '../lib/format';
 import {
   addFreelancer,
@@ -44,7 +44,7 @@ const run = async action => {
   try {
     await action();
   } catch (failure) {
-    if (failure.status === 422) error.value = failure.message;
+    if (failure.status === 422) error.value = t(errorKey(failure));
     else toast('error.generic');
   } finally {
     busy.value = false;

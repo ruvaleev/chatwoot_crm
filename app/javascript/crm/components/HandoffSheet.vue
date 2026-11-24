@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import BottomSheet from './BottomSheet.vue';
 import ChatAvatar from './ChatAvatar.vue';
-import { t } from '../lib/i18n';
+import { errorKey, t } from '../lib/i18n';
 import { handoff, now, state, toast } from '../lib/store';
 import { scheduleLabel } from '../lib/format';
 
@@ -22,8 +22,8 @@ const submit = async () => {
     await handoff(brief.value.trim());
     toast('toast.handed_off');
     emit('close');
-  } catch {
-    toast('error.generic');
+  } catch (failure) {
+    toast(errorKey(failure));
   } finally {
     busy.value = false;
   }

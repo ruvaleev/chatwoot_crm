@@ -52,3 +52,9 @@ jobs:
         run: script/crm/test
         env:
           RAILS_ENV: test
+      # crm/PRD.md, AC D.8: the new interface stays light in the production build.
+      - name: CRM bundle budget
+        run: bin/vite build && node script/crm/bundle-budget.mjs
+        env:
+          RAILS_ENV: production
+          NODE_OPTIONS: --max-old-space-size=4096

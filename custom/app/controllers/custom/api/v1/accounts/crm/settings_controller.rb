@@ -10,7 +10,7 @@ class Custom::Api::V1::Accounts::Crm::SettingsController < Api::V1::Accounts::Ba
   def update
     account = Current.account
     account.crm_settings = settings_params.to_h
-    return render_could_not_create_error(account.errors.full_messages.to_sentence) unless account.save
+    return render_could_not_create_error('settings_invalid') unless account.save
 
     render json: account.crm_settings
   end

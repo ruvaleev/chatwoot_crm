@@ -5,6 +5,8 @@
     <title><%= @installation_name %></title>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="robots" content="noindex">
+    <%# No icon of our own yet and no Chatwoot logo (crm/design/mockups/NOTES.md): an empty one stops the /favicon.ico 404. %>
+    <link rel="icon" href="data:,">
     <%= vite_client_tag %>
     <%= vite_javascript_tag 'crm' %>
   </head>

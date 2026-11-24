@@ -130,6 +130,16 @@ const showDay = index =>
         </span>
       </button>
       <div v-else class="flex-1" />
+      <button
+        v-if="header && isManager"
+        type="button"
+        class="hidden size-10 place-items-center rounded-full text-muted hover:bg-hover md:grid"
+        :aria-label="t('menu.handoff')"
+        :title="t('menu.handoff')"
+        @click="openSheet('handoff')"
+      >
+        <span class="i-lucide-user-round-check size-5" />
+      </button>
       <div v-if="header" class="relative">
         <button
           type="button"

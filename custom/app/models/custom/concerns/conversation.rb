@@ -22,14 +22,34 @@ module Custom::Concerns::Conversation
       value = Arel::Nodes::InfixOperation.new('->>', arel_table[:custom_attributes], Arel::Nodes.build_quoted('crm_status'))
       status == 'new' ? where(value.eq('new').or(value.eq(nil))) : where(value.eq(status))
     }
-    # Client name, phone (only when allowed) or message text.
-    scope :crm_matching, lambda { |query, phone:|
+    # Message text, and client name or phone when allowed.
+    scope :crm_matching, lambda { |query, contacts:, phone:|
       pattern = "%#{sanitize_sql_like(query)}%"
-      contacts = Contact.where(Contact.arel_table[:name].matches(pattern))
-      contacts = contacts.or(Contact.where(Contact.arel_table[:phone_number].matches(pattern))) if phone
-      messages = Message.where(Message.arel_table[:content].matches(pattern))
-      where(contact_id: contacts.select(:id)).or(where(id: messages.select(:conversation_id)))
+      by_messages = where(id: Message.where(Message.arel_table[:content].matches(pattern)).select(:conversation_id))
+      next by_messages unless contacts
+
+      matching = Contact.where(Contact.arel_table[:name].matches(pattern))
+      matching = matching.or(Contact.where(Contact.arel_table[:phone_number].matches(pattern))) if phone
+      where(contact_id: matching.select(:id)).or(by_messages)
     }
+  end
+
+  # What a chat list row shows, for a whole page at once instead of a few queries per row.
+  class_methods do
+    def crm_last_messages(ids)
+      # reorder(nil): messages come ordered by default, which a grouped query can't carry.
+      last_ids = Message.where(conversation_id: ids, private: false).where.not(message_type: :activity).reorder(nil)
+                        .group(:conversation_id).select(Message.arel_table[:id].maximum)
+      Message.where(id: last_ids).includes(:attachments).index_by(&:conversation_id)
+    end
+
+    # Like Chatwoot's unread_incoming_messages: incoming since the agents last looked, at most 10.
+    def crm_unread_counts(ids)
+      seen = arel_table[:agent_last_seen_at]
+      Message.incoming.joins(:conversation).where(conversation_id: ids).reorder(nil)
+             .where(Message.arel_table[:created_at].gt(seen).or(seen.eq(nil)))
+             .group(:conversation_id).count.transform_values { |count| [count, 10].min }
+    end
   end
 
   def crm_visible_to?(user)

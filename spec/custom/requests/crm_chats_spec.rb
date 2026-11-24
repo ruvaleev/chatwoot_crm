@@ -179,13 +179,24 @@ RSpec.describe 'CRM chats API', type: :request do
       end
     end
 
-    it 'never finds a client by phone for the freelancer' do
+    it 'never finds a client by phone for the freelancer, not even by a few digits' do
       own.contact.update!(name: 'Crm Olga', phone_number: '+15550104477')
 
-      get chats_path, params: { q: '0104477' }, headers: freelancer.create_new_auth_token
-      expect(response.parsed_body['payload']).to be_empty
+      %w[0104477 77].each do |digits|
+        get chats_path, params: { q: digits }, headers: freelancer.create_new_auth_token
+        expect(response.parsed_body['payload']).to be_empty
+      end
 
       get chats_path, params: { q: 'olga' }, headers: freelancer.create_new_auth_token
+      expect(response.parsed_body['payload'].pluck('id')).to eq([own.display_id])
+    end
+
+    it 'still finds digits in the message text for the freelancer' do
+      own.contact.update!(name: 'Crm Olga', phone_number: '+15550104477')
+      create(:message, account: account, inbox: inbox, conversation: own, content: 'order 4512 is ready')
+
+      get chats_path, params: { q: '4512' }, headers: freelancer.create_new_auth_token
+
       expect(response.parsed_body['payload'].pluck('id')).to eq([own.display_id])
     end
   end
@@ -239,5 +250,34 @@ RSpec.describe 'CRM chats API', type: :request do
 
     expect(response.parsed_body['payload'].pluck('id')).not_to include(service.display_id)
     expect(response.parsed_body.dig('meta', 'new_count')).to eq(0)
+  end
+
+  it 'rejects deal fields that are too long, with a code the interface translates' do
+    patch "#{chats_path}/#{own.display_id}", params: { budget: 'x' * 201 }, headers: freelancer.create_new_auth_token, as: :json
+
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(response.parsed_body['error']).to eq('deal_field_too_long')
+  end
+
+  it 'lists chats with the same number of queries however many there are' do
+    count_queries = lambda do
+      queries = 0
+      counter = ->(*, payload) { queries += 1 unless %w[SCHEMA TRANSACTION].include?(payload[:name]) }
+      ActiveSupport::Notifications.subscribed(counter, 'sql.active_record') do
+        get chats_path, headers: manager.create_new_auth_token, as: :json
+      end
+      queries
+    end
+    create(:message, account: account, inbox: inbox, conversation: own, message_type: :incoming)
+    own.contact.update!(label_list: ['crm-vip'])
+    few = count_queries.call
+
+    3.times do
+      chat = create(:conversation, account: account, inbox: inbox, assignee: freelancer)
+      chat.contact.update!(label_list: ['crm-vip'])
+      create(:message, account: account, inbox: inbox, conversation: chat, message_type: :incoming)
+    end
+
+    expect(count_queries.call).to eq(few)
   end
 end

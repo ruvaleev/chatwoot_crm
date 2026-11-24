@@ -36,4 +36,14 @@ describe Custom::Whatsapp::SendFailure do
     expect(sent.reload.status).to eq('sent')
     expect(Message.exists?(failure_note.id)).to be(true)
   end
+
+  it 'blames the message WhatsApp never got, not a later delivered one' do
+    sent.update!(source_id: nil, created_at: 2.minutes.ago)
+    create(:message, conversation: conversation, account: account, inbox: inbox, message_type: :outgoing, sender: agent,
+                     status: :delivered, source_id: 'WAID:3EB0DELIVERED')
+
+    listener.message_created(Events::Base.new('message.created', Time.zone.now, message: failure_note))
+
+    expect(sent.reload.status).to eq('failed')
+  end
 end

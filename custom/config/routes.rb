@@ -1,8 +1,9 @@
 # Routes of the new interface (crm/PRD.md, stage D). Listed next to config/routes.rb (see
 # custom/config/initializers/crm_routes.rb), so they reload in development like the main routes file.
 Rails.application.routes.draw do
-  get '/api/v1/crm/invitations/:token', to: 'custom/api/v1/crm/invitations#show', defaults: { format: 'json' }
-  post '/api/v1/crm/invitations/:token', to: 'custom/api/v1/crm/invitations#accept', defaults: { format: 'json' }
+  # The token travels in the body (filtered from logs), never in a path.
+  post '/api/v1/crm/invitation', to: 'custom/api/v1/crm/invitations#show', defaults: { format: 'json' }
+  post '/api/v1/crm/invitation/accept', to: 'custom/api/v1/crm/invitations#accept', defaults: { format: 'json' }
   get '/crm', to: 'custom/crm#index', as: :crm
   get '/crm/*path', to: 'custom/crm#index', format: false
 
