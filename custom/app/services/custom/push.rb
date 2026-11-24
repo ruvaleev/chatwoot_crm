@@ -51,5 +51,8 @@ class Custom::Push
   rescue WebPush::ExpiredSubscription, WebPush::InvalidSubscription, WebPush::Unauthorized
     # The browser dropped this subscription (app removed, permission revoked): stop sending to it.
     subscription.destroy!
+  rescue StandardError => e
+    # One device failing (timeout, rate limit, push service down) must not cost the others their notification.
+    Rails.logger.error("CRM push to subscription #{subscription.id} failed: #{e.class}: #{e.message}")
   end
 end

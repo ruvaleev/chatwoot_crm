@@ -23,6 +23,14 @@ RSpec.describe 'Chatwoot features the CRM does not use', type: :request do
     end
   end
 
+  it 'answers 404 however the path is written' do
+    ['/api//v1/widget/config', '/installation//onboarding', '/platform/api/v1//users/1', '/hc/docs/'].each do |path|
+      get path
+
+      expect(response).to have_http_status(:not_found), path
+    end
+  end
+
   it 'keeps what the new interface and Evolution use' do
     %W[/api/v1/accounts/#{account.id}/conversations /api/v1/accounts/#{account.id}/contacts /api/v1/accounts/#{account.id}/inboxes
        /api/v1/accounts/#{account.id}/canned_responses /api/v1/accounts/#{account.id}/labels /api/v1/profile].each do |path|

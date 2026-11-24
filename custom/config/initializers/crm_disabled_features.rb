@@ -6,7 +6,9 @@ class CrmDisabledFeatures
   end
 
   def call(env)
-    return [404, { 'content-type' => 'text/plain' }, ['Not Found']] if block?(env['PATH_INFO'])
+    # The router squeezes repeated slashes (//hc, /api//v1/widget), so the path is checked the way it will be routed.
+    path = ActionDispatch::Journey::Router::Utils.normalize_path(env['PATH_INFO'])
+    return [404, { 'content-type' => 'text/plain' }, ['Not Found']] if block?(path)
 
     @app.call(env)
   end

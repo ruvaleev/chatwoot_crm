@@ -65,6 +65,17 @@ describe Custom::Push do
     expect(manager.notification_subscriptions).to be_empty
   end
 
+  it 'still notifies the others when one device fails' do
+    other_manager = create(:user, account: account, role: :administrator)
+    subscribe(other_manager, 'https://push.test/other-manager')
+    allow(WebPush).to receive(:payload_send).with(hash_including(endpoint: 'https://push.test/manager')).and_raise(Net::ReadTimeout)
+
+    described_class.new(message).perform
+
+    expect(sent.map(&:first)).to eq(['https://push.test/other-manager'])
+    expect(manager.notification_subscriptions).to be_present
+  end
+
   it 'is sent for client messages only, not for the Evolution service chat' do
     service_contact = create(:contact, account: account, phone_number: Conversation::CRM_SERVICE_CONTACT_PHONE)
     service_message = create(:message, account: account, inbox: inbox, message_type: :incoming,
