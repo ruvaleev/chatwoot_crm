@@ -12,6 +12,30 @@
 
 ---
 
+## 2026-11-24 · Этап L, часть L3 (боевая сборка) · in progress
+
+- `vite-plugin-ruby` делает входной точкой каждый файл `app/javascript/entrypoints`, а свои значения в
+  `vite.config.ts` только добавляются к его списку. Поэтому плагин `custom/config/vite_entrypoints.js`
+  (`enforce: 'post'`, только `vite build` в режиме production) оставляет `crm.js`, `superadmin.js`,
+  `superadmin.scss`, `superadmin_pages.js`. Не собираются: `dashboard.js` и `v3app.js` (старый интерфейс), `widget.js`,
+  `portal.js` (Help Center), `survey.js`, `sdk.js`. Проверено `resolveConfig`: production — 4 входа, development —
+  11 (в dev старый интерфейс остаётся для сравнения). Правка upstream — две строки в `vite.config.ts`, в реестре.
+  Спек `app/javascript/crm/specs/viteEntrypoints.spec.js`.
+- Маршруты: `/app/*` на проде ведёт всех в `/crm/` (`Custom::DashboardController`, спек); виджет, Help Center, опросы,
+  экран установки уже отвечают 404 (L2). Если когда-нибудь включить `help_center` через `CRM_EXTRA_FEATURES`,
+  страницам `/hc` понадобится вход `portal.js` в этом списке (записано в `Custom::Features`).
+- Размер боевой сборки (CI, шаг «CRM bundle budget», `vite build`, RAILS_ENV=production):
+
+| | Файлов | Всего | JS и CSS, gzip | `/crm` при старте, gzip |
+|---|---|---|---|---|
+| До (коммит `ci(crm): report the size…`) | 307 | 61,3 МБ | 78 файлов, 7,7 МБ | JS 106,0 КБ (5), CSS 7,5 КБ |
+| После | AFTER_FILES | AFTER_TOTAL | AFTER_CODE | AFTER_CRM |
+
+  Больше всего весили иконки старого интерфейса (`DashboardIcon`, 17,5 МБ, 4,9 МБ gzip) и `dashboard` (3,5 МБ).
+- Сборку локально не делал (правило про диск); цифру «после» даст первый прогон CI этого коммита.
+
+---
+
 ## 2026-11-24 · Этап L, часть L2 (функции аккаунта и их API) · in progress
 
 **Набор функций — в коде, расширение — флагом** (`custom/lib/custom/features.rb`, решение человека). Базовый

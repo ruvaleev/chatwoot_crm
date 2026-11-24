@@ -29,7 +29,16 @@ RSpec.describe 'The new interface as the main one', type: :request do
     expect(response).to redirect_to('/crm/')
   end
 
-  it 'keeps the old dashboard for managers and before sign-in' do
+  it 'sends everyone to the new interface in production, where the old dashboard is not built' do
+    allow(Rails.env).to receive(:production?).and_return(true)
+    sign_in_cookie(manager)
+
+    get '/app/accounts/1/settings/inboxes'
+
+    expect(response).to redirect_to('/crm/')
+  end
+
+  it 'keeps the old dashboard in development for managers and before sign-in' do
     sign_in_cookie(manager)
     get '/app/accounts/1/dashboard'
     expect(response).to have_http_status(:success)

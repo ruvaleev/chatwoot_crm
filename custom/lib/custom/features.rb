@@ -2,11 +2,13 @@
 # more, e.g. CRM_EXTRA_FEATURES=reports,campaigns. Accounts get exactly these flags (new ones on creation, existing ones
 # with rake crm:features), and CrmDisabledFeatures answers 404 for the API and pages of the features that are off.
 module Custom::Features
-  # crm, chatwoot_v4 and the management pages keep Chatwoot's own interface usable for managers until stage L3;
-  # api_and_webhooks gates the account API on Chatwoot Cloud only.
+  # crm, chatwoot_v4 and the management pages keep Chatwoot's own interface usable in development (production doesn't
+  # build it, stage L3); api_and_webhooks gates the account API on Chatwoot Cloud only.
   BASE = %w[agent_management api_and_webhooks canned_responses chatwoot_v4 crm custom_attributes inbox_management labels].freeze
 
   # API and pages of the features one may turn on. Plain names are /api/v1/accounts/<id>/<name>, others are paths.
+  # Only their API, for Chatwoot's own interface is not in the production build: help_center pages (/hc) need the
+  # portal entrypoint added to custom/config/vite_entrypoints.js.
   ROUTES = {
     'agent_bots' => %w[agent_bots],
     'assignment_v2' => %w[agent_capacity_policies assignment_policies],

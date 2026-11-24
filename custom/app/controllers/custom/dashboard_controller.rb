@@ -1,5 +1,6 @@
 # The new interface is the main one (crm/PRD.md, stage D4): the root opens it, and freelancers no longer get the old
-# dashboard at /app. Managers keep /app during the transition (stage L takes it out of the production build).
+# dashboard at /app. In production the old dashboard is not built (custom/config/vite_entrypoints.js, stage L3), so
+# everyone goes to /crm; in development managers keep it for comparison.
 module Custom::DashboardController
   def self.prepended(base)
     base.prepend_before_action :crm_redirect, only: :index
@@ -8,7 +9,7 @@ module Custom::DashboardController
   private
 
   def crm_redirect
-    redirect_to '/crm/' if request.path == '/' || crm_session_user&.crm_freelancer?
+    redirect_to '/crm/' if request.path == '/' || Rails.env.production? || crm_session_user&.crm_freelancer?
   end
 
   # The dashboard page itself is served without a session; the user is the one of the sign-in cookie both apps share.
