@@ -1,5 +1,9 @@
 # Chatwoot Development Guidelines
 
+> **CRM fork:** this repository is a private fork. Before any work, read `crm/AGENTS.md`; it adds
+> fork-specific context and overrides conflicting rules below (tickets, PRs, i18n, Ruby setup, where custom code lives).
+> @crm/AGENTS.md
+
 ## Build / Test / Lint
 
 - **Setup**: `bundle install && pnpm install`

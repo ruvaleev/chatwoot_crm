@@ -1,0 +1,6 @@
+# CRM local MVP: Chatwoot (web, Sidekiq, Vite) + Evolution API. Run: bin/dev
+# Same as Procfile.dev, but Sidekiq reads .env.development.local (we keep no .env, it would leak into tests).
+backend: bin/rails s -p 3000
+worker: dotenv -f .env.development.local bundle exec sidekiq -C config/sidekiq.yml
+vite: bin/vite dev
+evolution: cd "${EVOLUTION_DIR:-$HOME/private_projects/evolution-api}" && exec node dist/main

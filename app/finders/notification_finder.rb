@@ -60,3 +60,6 @@ class NotificationFinder
     params[:sort_order] || :desc
   end
 end
+
+# CRM: extension point for custom/ (crm/docs/core-changes.md)
+NotificationFinder.prepend_mod_with('NotificationFinder')

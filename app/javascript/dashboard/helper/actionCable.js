@@ -15,6 +15,7 @@ import { VOICE_CALL_PROVIDERS } from 'dashboard/helper/inbox';
 import { markCallDismissed, isLocalCall } from 'dashboard/helper/voice';
 import { VOICE_CALL_DIRECTION } from 'dashboard/components-next/message/constants';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
+import { conversationListPageURL } from 'dashboard/helper/URLHelper';
 
 const { isImpersonating } = useImpersonation();
 const UNREAD_COUNTS_REFETCH_THROTTLE_MS = 5000;
@@ -48,6 +49,8 @@ class ActionCableConnector extends BaseActionCableConnector {
       'user:logout': this.onLogout,
       'page:reload': this.onReload,
       'assignee.changed': this.onAssigneeChanged,
+      // CRM: a freelancer loses a reassigned conversation (crm/docs/core-changes.md)
+      'conversation.crm_access_revoked': this.onConversationAccessRevoked,
       'conversation.typing_on': this.onTypingOn,
       'conversation.typing_off': this.onTypingOff,
       'conversation.contact_changed': this.onConversationContactChange,
@@ -124,6 +127,19 @@ class ActionCableConnector extends BaseActionCableConnector {
       this.app.$store.dispatch('updateConversation', payload);
     }
     this.fetchConversationStats();
+  };
+
+  onConversationAccessRevoked = async ({ id }) => {
+    const { $store } = this.app;
+    const isOpen = $store.getters.getSelectedChat.id === id;
+    $store.commit('DELETE_CONVERSATION', id);
+    this.fetchConversationStats();
+    if (!isOpen) return;
+
+    const { router } = await import('dashboard/routes');
+    router.push(
+      conversationListPageURL({ accountId: $store.getters.getCurrentAccountId })
+    );
   };
 
   onConversationCreated = data => {

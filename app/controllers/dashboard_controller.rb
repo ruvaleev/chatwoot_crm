@@ -131,3 +131,6 @@ class DashboardController < ActionController::Base
     sensitive_paths.include?(current_path)
   end
 end
+
+# CRM: extension point for custom/ (crm/docs/core-changes.md)
+DashboardController.prepend_mod_with('DashboardController')

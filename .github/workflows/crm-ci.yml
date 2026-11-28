@@ -1,0 +1,60 @@
+name: CRM CI
+permissions:
+  contents: read
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.7-pg18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ''
+          POSTGRES_DB: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --mount type=tmpfs,destination=/var/lib/postgresql
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7.4.12-alpine
+        ports:
+          - 6379:6379
+        options: --entrypoint redis-server
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Prepare database
+        run: bundle exec rake db:create db:schema:load
+        env:
+          RAILS_ENV: test
+      - name: Run CRM checks
+        run: script/crm/test
+        env:
+          RAILS_ENV: test
+      # crm/PRD.md, AC D.8: the new interface stays light in the production build.
+      - name: CRM bundle budget
+        run: bin/vite build && node script/crm/bundle-budget.mjs
+        env:
+          RAILS_ENV: production
+          NODE_OPTIONS: --max-old-space-size=4096

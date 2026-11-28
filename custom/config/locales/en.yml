@@ -1,0 +1,6 @@
+en:
+  crm:
+    push:
+      attachment: 'Attachment'
+    contact:
+      masked_name: 'Client •••%{last_digits}'
