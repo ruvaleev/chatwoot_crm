@@ -27,12 +27,14 @@ export const state = reactive({
   list: {
     filter: 'all',
     inboxId: null,
+    assigneeId: null,
     status: null,
     sort: 'recent',
     query: '',
     items: [],
     counts: { waiting: 0, new: 0, mine: 0, hidden: 0 },
     inboxes: [],
+    assignees: [],
     page: 1,
     hasMore: false,
     loading: false,
@@ -85,6 +87,7 @@ const listQuery = (page = 1) => {
     filter: list.filter,
     sort: list.sort,
     inbox_id: list.inboxId,
+    assignee_id: list.assigneeId,
     status: list.status,
     q: list.query.trim() || null,
     page,
@@ -110,6 +113,7 @@ export const loadList = async (changes = {}) => {
         hidden: data.meta.hidden_count,
       },
       inboxes: data.meta.inboxes,
+      assignees: data.meta.assignees,
       page: 1,
       hasMore: data.meta.has_more,
     });
@@ -291,6 +295,14 @@ export const handoff = async brief => {
   const header = await api.handoff(id, { brief });
   if (state.chat.id === id) updateHeader(header);
   patchRow(id, { status: header.status, assignee: header.assignee });
+};
+
+export const unassign = async () => {
+  const id = state.chat.id;
+  const header = await api.unassign(id);
+  if (state.chat.id === id) updateHeader(header);
+  patchRow(id, { status: header.status, assignee: null });
+  toast('toast.unassigned');
 };
 
 // Team and own templates as one list, loaded on the first "/" typed in the composer.

@@ -169,6 +169,25 @@ RSpec.describe 'CRM chats API', type: :request do
       expect(response).to have_http_status(:unprocessable_content)
     end
 
+    it 'filters by assignee for managers and names nobody to freelancers' do
+      get chats_path, params: { assignee_id: freelancer.id }, headers: manager.create_new_auth_token
+      expect(response.parsed_body['payload'].pluck('id')).to eq([own.display_id])
+      expect(response.parsed_body.dig('meta', 'assignees').pluck('id')).to include(freelancer.id, manager.id)
+
+      get chats_path, params: { assignee_id: create(:user).id }, headers: manager.create_new_auth_token
+      expect(response).to have_http_status(:unprocessable_content)
+
+      get chats_path, headers: freelancer.create_new_auth_token
+      expect(response.parsed_body.dig('meta', 'assignees')).to eq([])
+    end
+
+    it 'has no more pages when nothing matches' do
+      get chats_path, params: { status: 'spam' }, headers: manager.create_new_auth_token
+
+      expect(response.parsed_body['payload']).to be_empty
+      expect(response.parsed_body.dig('meta', 'has_more')).to be(false)
+    end
+
     it 'searches names, phones and messages for managers' do
       unassigned.contact.update!(name: 'Crm Olga', phone_number: '+15550104477')
       create(:message, account: account, inbox: inbox, conversation: foreign, content: 'crm needle')
@@ -228,6 +247,23 @@ RSpec.describe 'CRM chats API', type: :request do
       post "#{chats_path}/#{own.display_id}/handoff", params: { brief: 'crm' }, headers: freelancer.create_new_auth_token, as: :json
 
       expect(response).to have_http_status(:forbidden)
+    end
+
+    it 'takes the client back from the freelancer' do
+      own.update!(custom_attributes: { 'crm_status' => 'handed_off' })
+
+      post "#{chats_path}/#{own.display_id}/unassign", headers: manager.create_new_auth_token, as: :json
+
+      expect(response.parsed_body).to include('assignee' => nil, 'status' => 'qualifying')
+      get "#{chats_path}/#{own.display_id}", headers: freelancer.create_new_auth_token, as: :json
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it 'does not let freelancers drop a client' do
+      post "#{chats_path}/#{own.display_id}/unassign", headers: freelancer.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:forbidden)
+      expect(own.reload.assignee).to eq(freelancer)
     end
 
     it 'needs a freelancer on the number' do

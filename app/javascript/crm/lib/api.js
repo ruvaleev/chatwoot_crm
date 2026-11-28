@@ -76,6 +76,8 @@ export const accountApi = accountId => {
     hide: id => request(`${base}/crm/chats/${id}/hide`, { method: 'POST' }),
     handoff: (id, body) =>
       request(`${base}/crm/chats/${id}/handoff`, { method: 'POST', body }),
+    unassign: id =>
+      request(`${base}/crm/chats/${id}/unassign`, { method: 'POST' }),
     templates: () => request(`${base}/crm/templates`),
     saveTemplate: ({ id, ...body }) =>
       request(`${base}/crm/templates${id ? `/${id}` : ''}`, {

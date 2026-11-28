@@ -24,6 +24,8 @@ const LONG_PRESS = 500;
 const overdue = computed(() =>
   isOverdue(props.chat, now.value, state.settings)
 );
+// The client wrote last and nobody answered: the row stands out, in red once the wait is too long.
+const waiting = computed(() => Boolean(props.chat.waiting_since));
 const last = computed(() => props.chat.last_message);
 let pressTimer = null;
 let pressed = false;
@@ -55,13 +57,18 @@ const open = () => {
     @pointerleave="endPress"
   >
     <span
-      v-if="overdue"
-      class="absolute inset-y-2 start-0 w-1 rounded-e bg-danger"
+      v-if="waiting"
+      class="absolute inset-y-2 start-0 w-1 rounded-e"
+      :class="overdue ? 'bg-danger' : 'bg-warn'"
     />
     <ChatAvatar :name="chat.contact.name" />
     <div class="min-w-0 flex-1 border-b border-line pb-2.5">
       <div class="flex items-baseline gap-2">
-        <span class="flex-1 truncate font-medium">{{ chat.contact.name }}</span>
+        <span
+          class="flex-1 truncate"
+          :class="waiting ? 'font-semibold' : 'font-medium'"
+          >{{ chat.contact.name }}</span
+        >
         <span
           class="shrink-0 text-xs"
           :class="
@@ -81,9 +88,11 @@ const open = () => {
           v-if="last?.attachment_type && !last.content"
           class="i-lucide-paperclip size-3.5 shrink-0 text-faint"
         />
-        <span class="flex-1 truncate text-sm text-muted">{{
-          previewText(last)
-        }}</span>
+        <span
+          class="flex-1 truncate text-sm"
+          :class="waiting ? 'text-ink' : 'text-muted'"
+          >{{ previewText(last) }}</span
+        >
         <span
           v-if="chat.unread_count"
           class="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-accent px-1.5 text-xs font-semibold text-on-accent"
@@ -99,8 +108,11 @@ const open = () => {
           {{ t('row.fresh') }}
         </span>
         <span
-          v-if="overdue"
-          class="inline-flex items-center gap-1 rounded-md bg-danger-soft px-1.5 text-xs font-semibold leading-5 text-danger"
+          v-if="waiting"
+          class="inline-flex items-center gap-1 rounded-md px-1.5 text-xs font-semibold leading-5"
+          :class="
+            overdue ? 'bg-danger-soft text-danger' : 'bg-warn-soft text-warn'
+          "
         >
           <span class="i-lucide-clock size-3" />
           {{ waitingLabel(waitingMinutes(chat.waiting_since, now)) }}

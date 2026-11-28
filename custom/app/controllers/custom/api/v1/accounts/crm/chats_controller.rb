@@ -10,7 +10,8 @@ class Custom::Api::V1::Accounts::Crm::ChatsController < Api::V1::Accounts::BaseC
   before_action :validate_list_params, only: :index
   before_action :fetch_chat, except: :index
   before_action :validate_update, only: :update
-  before_action :ensure_manager, :fetch_handoff_target, only: :handoff
+  before_action :ensure_manager, only: [:handoff, :unassign]
+  before_action :fetch_handoff_target, only: :handoff
 
   # Only client chats: Evolution's service chat (QR codes, connection statuses) belongs to the numbers screen.
   def index
@@ -19,6 +20,7 @@ class Custom::Api::V1::Accounts::Crm::ChatsController < Api::V1::Accounts::BaseC
     shown = narrowed(clients.where.not(id: hidden_ids))
     @counts = tab_counts(shown).merge(hidden: hidden.count)
     @inboxes = Current.user.assigned_inboxes.order(:name)
+    @assignees = assignees.order(:name)
     @chats = filtered(hidden, shown).includes({ contact: :labels }, :assignee, inbox: :members).page(params[:page]).per(PER_PAGE)
     load_rows(@chats)
   end
@@ -41,6 +43,14 @@ class Custom::Api::V1::Accounts::Crm::ChatsController < Api::V1::Accounts::BaseC
       @chat.update!(assignee: @handoff_target,
                     custom_attributes: @chat.custom_attributes.merge('crm_status' => 'handed_off', 'crm_brief_message_id' => brief.id))
     end
+    load_rows([@chat])
+    render :show
+  end
+
+  # The manager takes the client back: the freelancer loses the chat at once (list, open chat, real-time).
+  def unassign
+    status = @chat.crm_status == 'handed_off' ? 'qualifying' : @chat.crm_status
+    @chat.update!(assignee: nil, custom_attributes: @chat.custom_attributes.merge('crm_status' => status))
     load_rows([@chat])
     render :show
   end
@@ -78,6 +88,11 @@ class Custom::Api::V1::Accounts::Crm::ChatsController < Api::V1::Accounts::BaseC
     Conversations::PermissionFilterService.new(Current.account.conversations, Current.user, Current.account).perform
   end
 
+  # Managers filter by who has the client; a freelancer sees only own chats and no colleagues' names.
+  def assignees
+    Current.user.crm_freelancer? ? User.none : Current.account.users
+  end
+
   def hidden_ids
     Current.user.crm_hidden_conversations.select(:conversation_id)
   end
@@ -89,6 +104,7 @@ class Custom::Api::V1::Accounts::Crm::ChatsController < Api::V1::Accounts::BaseC
   # Number, status and search apply to every tab and to the counters.
   def narrowed(chats)
     chats = chats.where(inbox_id: params[:inbox_id]) if params[:inbox_id].present?
+    chats = chats.where(assignee_id: params[:assignee_id]) if params[:assignee_id].present?
     chats = chats.crm_with_status(params[:status]) if params[:status].present?
     params[:q].present? ? searched(chats, params[:q].strip) : chats
   end
@@ -121,11 +137,13 @@ class Custom::Api::V1::Accounts::Crm::ChatsController < Api::V1::Accounts::BaseC
   end
 
   def validate_list_params
-    return render_could_not_create_error("Unknown filter: #{params[:filter]}") unless FILTERS.include?(params.fetch(:filter, 'all'))
-    return render_could_not_create_error("Unknown sort: #{params[:sort]}") unless SORTS.include?(params.fetch(:sort, 'recent'))
-    return if params[:status].blank? || Conversation::CRM_STATUSES.include?(params[:status])
-
-    render_could_not_create_error("Unknown status: #{params[:status]}")
+    invalid = {
+      filter: FILTERS.exclude?(params.fetch(:filter, 'all')),
+      sort: SORTS.exclude?(params.fetch(:sort, 'recent')),
+      status: params[:status].present? && Conversation::CRM_STATUSES.exclude?(params[:status]),
+      assignee: params[:assignee_id].present? && !assignees.exists?(id: params[:assignee_id])
+    }.key(true)
+    render_could_not_create_error("Unknown #{invalid}") if invalid
   end
 
   # Errors the interface shows are codes; their texts live in its RU/EN dictionaries.

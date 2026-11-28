@@ -6,7 +6,7 @@ import MessageBubble from './MessageBubble.vue';
 import MessageComposer from './MessageComposer.vue';
 import ClientSheet from './ClientSheet.vue';
 import HandoffSheet from './HandoffSheet.vue';
-import { t } from '../lib/i18n';
+import { errorKey, t } from '../lib/i18n';
 import {
   isManager,
   loadOlder,
@@ -15,6 +15,8 @@ import {
   retryMessage,
   setHidden,
   state,
+  toast,
+  unassign,
 } from '../lib/store';
 import { dayLabel, MESSAGE_TYPE, sameDay, scheduleLabel } from '../lib/format';
 
@@ -88,6 +90,10 @@ const showOlder = async () => {
 const openSheet = section => {
   menuOpen.value = false;
   sheet.value = section;
+};
+const takeBack = () => {
+  menuOpen.value = false;
+  unassign().catch(failure => toast(errorKey(failure)));
 };
 const toggleHidden = () => {
   menuOpen.value = false;
@@ -176,6 +182,15 @@ const showDay = index =>
           >
             <span class="i-lucide-user-round-check size-5 text-muted" />
             {{ t('menu.handoff') }}
+          </button>
+          <button
+            v-if="isManager && header.assignee"
+            type="button"
+            class="flex w-full items-center gap-3 px-4 py-2.5 text-start hover:bg-hover"
+            @click="takeBack"
+          >
+            <span class="i-lucide-user-round-x size-5 text-muted" />
+            {{ t('menu.unassign') }}
           </button>
           <button
             type="button"

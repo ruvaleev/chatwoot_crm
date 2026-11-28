@@ -12,6 +12,7 @@ Rails.application.routes.draw do
       member do
         post :hide
         post :handoff
+        post :unassign
         delete :hide, action: :unhide
       end
     end

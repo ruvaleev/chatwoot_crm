@@ -39,7 +39,7 @@ const EMPTY = {
   all: ['i-lucide-message-circle', 'list.empty_all', 'list.empty_all_text'],
 };
 
-const tab = ref('waiting');
+const tab = ref('all');
 const search = ref(state.list.query);
 const menuOpen = ref(false);
 const filterOpen = ref(false);
@@ -50,7 +50,7 @@ let searchTimer = null;
 
 const list = computed(() => state.list);
 const tabs = computed(() =>
-  isManager.value ? ['waiting', 'new', 'mine', 'all'] : ['waiting', 'all']
+  isManager.value ? ['all', 'waiting', 'new', 'mine'] : ['all', 'waiting']
 );
 const filter = computed(() => (props.hiddenView ? 'hidden' : tab.value));
 const firstLoad = computed(
@@ -58,6 +58,9 @@ const firstLoad = computed(
 );
 const activeInbox = computed(() =>
   list.value.inboxes.find(inbox => inbox.id === list.value.inboxId)
+);
+const activeAssignee = computed(() =>
+  list.value.assignees.find(user => user.id === list.value.assigneeId)
 );
 const empty = computed(() => {
   if (list.value.query.trim())
@@ -228,6 +231,15 @@ const count = name => list.value.counts[name] || 0;
         <span class="i-lucide-x size-4" />
       </button>
       <button
+        v-if="activeAssignee"
+        type="button"
+        class="flex h-8 items-center gap-1 rounded-full bg-accent text-sm text-on-accent ps-3 pe-2"
+        @click="setFilter({ assigneeId: null })"
+      >
+        {{ activeAssignee.name }}
+        <span class="i-lucide-x size-4" />
+      </button>
+      <button
         v-if="list.status"
         type="button"
         class="flex h-8 items-center gap-1 rounded-full bg-accent text-sm text-on-accent ps-3 pe-2"
@@ -353,6 +365,35 @@ const count = name => list.value.counts[name] || 0;
           {{ inbox.name }}
         </button>
       </div>
+      <h3 v-if="isManager" class="mb-2 text-sm font-medium text-accent-ink">
+        {{ t('filter.assignee') }}
+      </h3>
+      <div v-if="isManager" class="mb-5 flex flex-wrap gap-2">
+        <button
+          type="button"
+          class="h-8 rounded-full px-3 text-sm"
+          :class="
+            list.assigneeId ? 'bg-chip text-muted' : 'bg-accent text-on-accent'
+          "
+          @click="setFilter({ assigneeId: null })"
+        >
+          {{ t('filter.all_assignees') }}
+        </button>
+        <button
+          v-for="user in list.assignees"
+          :key="user.id"
+          type="button"
+          class="h-8 rounded-full px-3 text-sm"
+          :class="
+            list.assigneeId === user.id
+              ? 'bg-accent text-on-accent'
+              : 'bg-chip text-muted'
+          "
+          @click="setFilter({ assigneeId: user.id })"
+        >
+          {{ user.name }}
+        </button>
+      </div>
       <h3 class="mb-2 text-sm font-medium text-accent-ink">
         {{ t('filter.status') }}
       </h3>
@@ -385,7 +426,7 @@ const count = name => list.value.counts[name] || 0;
       <button
         type="button"
         class="h-10 w-full rounded-lg bg-chip text-sm text-muted"
-        @click="setFilter({ inboxId: null, status: null })"
+        @click="setFilter({ inboxId: null, assigneeId: null, status: null })"
       >
         {{ t('filter.clear') }}
       </button>
